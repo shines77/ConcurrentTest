@@ -25,11 +25,13 @@ enum benchmark_type_t {
     kMaxQueueType
 };
 
+} // namespace ConcourrentTest
+
+using namespace ConcourrentTest;
+
 int main(int argc, char * argv[])
 {
     printf("ConcurrentTest.\n");
     ::system("pause");
     return 0;
 }
-
-} // namespace ConcourrentTest
