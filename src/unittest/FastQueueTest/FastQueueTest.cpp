@@ -11,6 +11,10 @@
 
 #include <assert.h>
 
+#include <FastQueue/utils/PowOf2.h>
+
+using namespace FastQueue;
+
 typedef double  jmc_timestamp_t;
 
 namespace FastQueueTest {
@@ -47,78 +51,6 @@ public:
     }
     ~Message() {}
 };
-
-namespace detail {
-
-template <typename SizeType>
-inline bool is_pow2(SizeType n) {
-    typedef std::make_unsigned<SizeType>::type UnsignedSizeType;
-    UnsignedSizeType x = n;
-    return ((x & (x - 1)) == 0);
-}
-
-template <typename SizeType>
-inline SizeType check_is_pow2(SizeType n) {
-    typedef std::make_unsigned<SizeType>::type UnsignedSizeType;
-    UnsignedSizeType x = n;
-    return (x & (x - 1));
-}
-
-template <typename SizeType>
-inline SizeType round_to_pow2(SizeType n) {
-    typedef std::make_unsigned<SizeType>::type UnsignedSizeType;
-    UnsignedSizeType x;
-    if (is_pow2(n)) {
-        return n;
-    }
-    else {
-        x = static_cast<UnsignedSizeType>(n - 1);
-        x = x | (x >> 1);
-        x = x | (x >> 2);
-        x = x | (x >> 4);
-        x = x | (x >> 8);
-        x = x | (x >> 16);
-        return static_cast<SizeType>(x + 1);
-    }
-}
-
-template <>
-inline uint64_t round_to_pow2(uint64_t n) {
-    uint64_t x;
-    if (is_pow2(n)) {
-        return n;
-    }
-    else {
-        x = n - 1;
-        x = x | (x >> 1);
-        x = x | (x >> 2);
-        x = x | (x >> 4);
-        x = x | (x >> 8);
-        x = x | (x >> 16);
-        x = x | (x >> 32);
-        return (x + 1);
-    }
-}
-
-template <>
-inline int64_t round_to_pow2(int64_t n) {
-    uint64_t x;
-    if (is_pow2(n)) {
-        return n;
-    }
-    else {
-        x = static_cast<uint64_t>(n - 1);
-        x = x | (x >> 1);
-        x = x | (x >> 2);
-        x = x | (x >> 4);
-        x = x | (x >> 8);
-        x = x | (x >> 16);
-        x = x | (x >> 32);
-        return static_cast<int64_t>(x + 1);
-    }
-}
-
-} // namespace detail
 
 template <typename T, typename LockType = std::mutex,
           typename IndexType = uint64_t,
@@ -373,44 +305,44 @@ int main(int argc, char * argv[])
     ASSERT_BOOLEAN_PASSED_EX("StdMutexRingQueue::pop_front()", message.value == 1);
     
     bool isPow2;
-    isPow2 = detail::is_pow2(0xFFFFFFFFUL);
+    isPow2 = runtime::is_pow2(0xFFFFFFFFUL);
     ASSERT_BOOLEAN_VERIFY_EX("is_pow2(0xFFFFFFFFUL)", isPow2 == false);
-    isPow2 = detail::is_pow2(0);
+    isPow2 = runtime::is_pow2(0);
     ASSERT_BOOLEAN_VERIFY_EX("is_pow2(0)", isPow2 == true);
-    isPow2 = detail::is_pow2(1);
+    isPow2 = runtime::is_pow2(1);
     ASSERT_BOOLEAN_VERIFY_EX("is_pow2(1)", isPow2 == true);
-    isPow2 = detail::is_pow2(2);
+    isPow2 = runtime::is_pow2(2);
     ASSERT_BOOLEAN_VERIFY_EX("is_pow2(2)", isPow2 == true);
-    isPow2 = detail::is_pow2(3);
+    isPow2 = runtime::is_pow2(3);
     ASSERT_BOOLEAN_VERIFY_EX("is_pow2(3)", isPow2 == false);
-    isPow2 = detail::is_pow2(4);
+    isPow2 = runtime::is_pow2(4);
     ASSERT_BOOLEAN_VERIFY_EX("is_pow2(4)", isPow2 == true);
-    isPow2 = detail::is_pow2(16);
+    isPow2 = runtime::is_pow2(16);
     ASSERT_BOOLEAN_VERIFY_EX("is_pow2(16)", isPow2 == true);
-    isPow2 = detail::is_pow2(17);
+    isPow2 = runtime::is_pow2(17);
     ASSERT_BOOLEAN_VERIFY_EX("is_pow2(17)", isPow2 == false);
-    isPow2 = detail::is_pow2(37);
+    isPow2 = runtime::is_pow2(37);
     ASSERT_BOOLEAN_VERIFY_EX("is_pow2(37)", isPow2 == false);
 
     size_t checkVal;
-    checkVal = detail::check_is_pow2(0xFFFFFFFFUL);
-    printf("is_pow2(0xFFFFFFFFUL) : %d\n", checkVal);
-    checkVal = detail::check_is_pow2(0);
-    printf("is_pow2(0) : %d\n", checkVal);
-    checkVal = detail::check_is_pow2(1);
-    printf("is_pow2(1) : %d\n", checkVal);
-    checkVal = detail::check_is_pow2(2);
-    printf("is_pow2(2) : %d\n", checkVal);
-    checkVal = detail::check_is_pow2(3);
-    printf("is_pow2(3) : %d\n", checkVal);
-    checkVal = detail::check_is_pow2(4);
-    printf("is_pow2(4) : %d\n", checkVal);
-    checkVal = detail::check_is_pow2(16);
-    printf("is_pow2(16) : %d\n", checkVal);
-    checkVal = detail::check_is_pow2(17);
-    printf("is_pow2(17) : %d\n", checkVal);
-    checkVal = detail::check_is_pow2(37);
-    printf("is_pow2(37) : %d\n", checkVal);
+    checkVal = runtime::verify_pow2(0xFFFFFFFFUL);
+    printf("verify_pow2(0xFFFFFFFFUL) : %d\n", checkVal);
+    checkVal = runtime::verify_pow2(0);
+    printf("verify_pow2(0) : %d\n", checkVal);
+    checkVal = runtime::verify_pow2(1);
+    printf("verify_pow2(1) : %d\n", checkVal);
+    checkVal = runtime::verify_pow2(2);
+    printf("verify_pow2(2) : %d\n", checkVal);
+    checkVal = runtime::verify_pow2(3);
+    printf("verify_pow2(3) : %d\n", checkVal);
+    checkVal = runtime::verify_pow2(4);
+    printf("verify_pow2(4) : %d\n", checkVal);
+    checkVal = runtime::verify_pow2(16);
+    printf("verify_pow2(16) : %d\n", checkVal);
+    checkVal = runtime::verify_pow2(17);
+    printf("verify_pow2(17) : %d\n", checkVal);
+    checkVal = runtime::verify_pow2(37);
+    printf("verify_pow2(37) : %d\n", checkVal);
 
     printf("\n");
 
