@@ -61,6 +61,6 @@ format(char * buffer, std::size_t size_in_bytes,
 
 } // namespace StringUtils
 
-} // namespace TiActor
+} // namespace FastQueue
 
 #endif  /* FASTQUEUE_UTILS_STRINGUTILS_H */

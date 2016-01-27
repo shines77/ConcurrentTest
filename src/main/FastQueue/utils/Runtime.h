@@ -77,6 +77,6 @@ int getPhysicalProcessors() {
 
 } // namespace Runtime
 
-} // namespace TiActor
+} // namespace FastQueue
 
 #endif  /* FASTQUEUE_UTILS_RUNTIME_H */

@@ -31,6 +31,7 @@
     <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\stdint.h" />
     <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\stdsize.h" />
     <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\threadlocal.h" />
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\queue\LockedRingQueue.h" />
     <ClInclude Include="..\..\..\..\src\main\FastQueue\system\sleep.h" />
     <ClInclude Include="..\..\..\..\src\main\FastQueue\utils\MinMax.h" />
     <ClInclude Include="..\..\..\..\src\main\FastQueue\utils\PowOf2.h" />

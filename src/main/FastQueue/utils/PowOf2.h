@@ -6,6 +6,8 @@
 #pragma once
 #endif
 
+#include <type_traits>
+
 #include "FastQueue/basic/stdsize.h"
 #include "FastQueue/basic/stdint.h"
 
@@ -49,10 +51,12 @@ struct boolean_if {
 
 } // namespace detail
 
-namespace runtime {
+namespace run_time {
 
 template <typename SizeType>
 inline bool is_pow2(SizeType n) {
+    static_assert(std::is_integral<SizeType>::value,
+        "Error: is_pow2(SizeType n) -- SizeType must be a integral type.");
     typedef std::make_unsigned<SizeType>::type UnsignedSizeType;
     UnsignedSizeType x = n;
     return ((x & (x - 1)) == 0);
@@ -60,6 +64,8 @@ inline bool is_pow2(SizeType n) {
 
 template <typename SizeType>
 inline SizeType verify_pow2(SizeType n) {
+    static_assert(std::is_integral<SizeType>::value,
+        "Error: verify_pow2(SizeType n) -- SizeType must be a integral type.");
     typedef std::make_unsigned<SizeType>::type UnsignedSizeType;
     UnsignedSizeType x = n;
     return (x & (x - 1));
@@ -67,7 +73,8 @@ inline SizeType verify_pow2(SizeType n) {
 
 template <typename SizeType>
 inline SizeType round_to_pow2(SizeType n) {
-    st
+    static_assert(std::is_integral<SizeType>::value,
+        "Error: round_to_pow2(SizeType n) -- SizeType must be a integral type.");
     typedef std::make_unsigned<SizeType>::type UnsignedSizeType;
     UnsignedSizeType x;
     if (is_pow2(n)) {
@@ -120,9 +127,9 @@ inline int64_t round_to_pow2(int64_t n) {
     }
 }
 
-} // namespace runtime
+} // namespace run_time
 
-namespace static_const {
+namespace compile_time {
 
 #if (UTILS_POWOF2_MODE <= 1) || !defined(UTILS_POWOF2_MODE)
 
@@ -407,8 +414,8 @@ struct round_to_pow2<4294967295UL> {
 
 #endif // _WIN64 || _M_X64 || _M_AMD64
 
-} // namespace static_const
+} // namespace compile_time
 
-} // namespace TiActor
+} // namespace FastQueue
 
 #endif  /* FASTQUEUE_UTILS_POWOF2_H */

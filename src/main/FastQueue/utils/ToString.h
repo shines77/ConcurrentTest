@@ -98,6 +98,6 @@ std::string toString2(const T & x) {
 
 } // namespace StringUtils
 
-} // namespace TiActor
+} // namespace FastQueue
 
 #endif  /* FASTQUEUE_UTILS_TOSTRING_H */

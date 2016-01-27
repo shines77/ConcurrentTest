@@ -47,6 +47,6 @@ struct maxinum {
 
 } // namespace math
 
-} // namespace TiActor
+} // namespace FastQueue
 
 #endif  /* FASTQUEUE_UTILS_MINMAX_H */

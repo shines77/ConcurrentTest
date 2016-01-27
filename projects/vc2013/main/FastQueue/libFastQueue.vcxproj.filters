@@ -20,6 +20,9 @@
     <Filter Include="src\basic\msvc">
       <UniqueIdentifier>{813c2f36-60ea-4f2c-8546-9db6d3d5643b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\queue">
+      <UniqueIdentifier>{c10075fa-457f-4cbd-a904-5beade4b2dce}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\inttypes.h">
@@ -75,6 +78,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\..\src\main\FastQueue\utils\ToString.h">
       <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\queue\LockedRingQueue.h">
+      <Filter>src\queue</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
