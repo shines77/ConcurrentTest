@@ -26,20 +26,21 @@ enum queue_op_state_t {
 };
 
 template <typename ImplType, typename ItemType>
-class LockedRingQueueCommon {
+class LockedRingQueueAbstract {
 public:
-    typedef LockedRingQueueCommon<ImplType, ItemType>   this_type;
-    typedef LockedRingQueueCommon<ImplType, ItemType> * pthis_type;
+    typedef LockedRingQueueAbstract<ImplType, ItemType>   this_type;
+    typedef LockedRingQueueAbstract<ImplType, ItemType> * pthis_type;
 
     typedef ImplType            impl_type;
     typedef ImplType *          pimpl_type;
     typedef ImplType const *    const_pimpl_type;
     typedef ItemType            item_type;
     typedef std::size_t         size_type;
+    typedef typename impl_type::item_type   item_type2;
 
 public:
-    LockedRingQueueCommon() {}
-    virtual ~LockedRingQueueCommon() {}
+    LockedRingQueueAbstract() {}
+    virtual ~LockedRingQueueAbstract() {}
 
 private:
     inline pimpl_type staic_cast_this() {
@@ -107,7 +108,7 @@ template <typename T, typename LockType = std::mutex,
           typename IndexType = uint64_t,
           size_t initCapacity = kQueueDefaultCapacity>
 class Fixed_LockedRingQueue :
-    public LockedRingQueueCommon<Fixed_LockedRingQueue<T, LockType, IndexType, initCapacity>, T> {
+    public LockedRingQueueAbstract<Fixed_LockedRingQueue<T, LockType, IndexType, initCapacity>, T> {
 public:
     typedef T               item_type;
     typedef T *             value_type;
@@ -122,7 +123,7 @@ public:
     static const size_type  kAlignment = compile_time::round_to_pow2<kCacheLineSize>::value;
 
     template <typename U, typename T>
-    friend class LockedRingQueueCommon;
+    friend class LockedRingQueueAbstract;
 
 private:
     index_type          head_;
@@ -220,7 +221,7 @@ protected:
 template <typename T, typename LockType = std::mutex,
           typename IndexType = uint64_t>
 class LockedRingQueue :
-    public LockedRingQueueCommon<LockedRingQueue<T, LockType, IndexType>, T> {
+    public LockedRingQueueAbstract<LockedRingQueue<T, LockType, IndexType>, T> {
 public:
     typedef T               item_type;
     typedef T *             value_type;
@@ -233,7 +234,7 @@ public:
     static const size_type  kAlignment = compile_time::round_to_pow2<kCacheLineSize>::value;
 
     template <typename U, typename T>
-    friend class LockedRingQueueCommon;
+    friend class LockedRingQueueAbstract;
 
 private:
     index_type          head_;
