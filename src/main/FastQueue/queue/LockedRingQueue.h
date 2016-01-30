@@ -25,10 +25,89 @@ enum queue_op_state_t {
     OP_STATE_SUCCESS = 0
 };
 
+template <typename ImplType, typename ItemType>
+class LockedRingQueueCommon {
+public:
+    typedef LockedRingQueueCommon<ImplType, ItemType>   this_type;
+    typedef LockedRingQueueCommon<ImplType, ItemType> * pthis_type;
+
+    typedef ImplType            impl_type;
+    typedef ImplType *          pimpl_type;
+    typedef ImplType const *    const_pimpl_type;
+    typedef ItemType            item_type;
+    typedef std::size_t         size_type;
+
+public:
+    LockedRingQueueCommon() {}
+    virtual ~LockedRingQueueCommon() {}
+
+private:
+    inline pimpl_type staic_cast_this() {
+        pimpl_type pThis = static_cast<pimpl_type>(this);
+        assert(pThis != nullptr);
+        return pThis;
+    }
+
+    inline const_pimpl_type const_cast_this() const {
+        pthis_type pOrigThisNonConst = const_cast<pthis_type>(this);
+        pimpl_type pThisNonConst = static_cast<pimpl_type>(pOrigThisNonConst);
+        const_pimpl_type pThisConst = const_cast<const_pimpl_type>(pThisNonConst);
+        assert(pThisConst != nullptr);
+        return pThisConst;
+    }
+
+public:
+    bool is_valid() const {
+        const_pimpl_type pThis = const_cast_this();
+        return (pThis->entries_ != nullptr);
+    }
+
+    bool is_empty() const {
+        const_pimpl_type pThis = const_cast_this();
+        bool _isEmpty;
+        pThis->lock_.lock();
+        _isEmpty = (pThis->head_ == pThis->tail_);
+        pThis->lock_.unlock();
+        assert((pThis->head_ - pThis->tail_) <= pThis->capacity());
+        return _isEmpty;
+    }
+
+    size_type capacity() const {
+        const_pimpl_type pThis = const_cast_this();
+        return pThis->capacity_;
+    }
+
+    size_type sizes() const {
+        const_pimpl_type pThis = const_cast_this();
+        size_type size;
+        pThis->lock_.lock();
+        size = pThis->head_ - pThis->tail_;
+        pThis->lock_.unlock();
+        assert(size <= pThis->capacity());
+        return size;
+    }
+
+    inline int push_front(item_type const & item) {
+        pimpl_type pThis = staic_cast_this();
+        return pThis->inner_push_front(item);
+    }
+
+    inline int push_front(item_type && item) {
+        pimpl_type pThis = staic_cast_this();
+        return pThis->inner_push_front(std::move(item));
+    }
+
+    inline int pop_front(item_type & item) {
+        pimpl_type pThis = staic_cast_this();
+        return pThis->inner_pop_front(item);
+    }
+};
+
 template <typename T, typename LockType = std::mutex,
           typename IndexType = uint64_t,
           size_t initCapacity = kQueueDefaultCapacity>
-class Fixed_LockedRingQueue {
+class Fixed_LockedRingQueue :
+    public LockedRingQueueCommon<Fixed_LockedRingQueue<T, LockType, IndexType, initCapacity>, T> {
 public:
     typedef T               item_type;
     typedef T *             value_type;
@@ -42,14 +121,30 @@ public:
     static const index_type kIndexMask = (index_type)(kCapacity - 1);
     static const size_type  kAlignment = compile_time::round_to_pow2<kCacheLineSize>::value;
 
+    template <typename U, typename T>
+    friend class LockedRingQueueCommon;
+
 private:
-    index_type      head_;
-    index_type      tail_;
-    value_type      entries_;
-    size_type       capacity_;
-    value_type      allocEntries_;
-    size_type       allocSize_;
-    lock_type       lock_;
+    index_type          head_;
+    index_type          tail_;
+    value_type          entries_;
+    size_type           capacity_;
+    value_type          allocEntries_;
+    size_type           allocSize_;
+    mutable lock_type   lock_;
+
+public:
+    Fixed_LockedRingQueue()
+        : head_(kInitCursor), tail_(kInitCursor), capacity_(kCapacity),
+          entries_(nullptr), allocEntries_(nullptr), allocSize_(0), lock_() {
+        init();
+    }
+
+    virtual ~Fixed_LockedRingQueue() {
+        lock_.lock();
+        free_queue();
+        lock_.unlock();
+    }
 
 private:
     inline void init() {
@@ -70,19 +165,7 @@ private:
         }
     }
 
-public:
-    Fixed_LockedRingQueue()
-        : head_(kInitCursor), tail_(kInitCursor), capacity_(kCapacity),
-          entries_(nullptr), allocEntries_(nullptr), allocSize_(0), lock_() {
-        init();
-    }
-
-    virtual ~Fixed_LockedRingQueue() {
-        lock_.lock();
-        free_queue();
-        lock_.unlock();
-    }
-
+protected:
     inline void free_queue() {
         if (allocEntries_) {
             delete[] allocEntries_;
@@ -95,29 +178,8 @@ public:
         }
     }
 
-    bool is_empty() const {
-        bool _isEmpty;
-        lock_.lock();
-        _isEmpty = (head_ == tail_);
-        lock_.unlock();
-        assert((head_ - tail_) <= kCapacity);
-        return _isEmpty;
-    }
-
-    size_type capacity() const {
-        return kCapacity;
-    }
-
-    size_type sizes() {
-        size_type size;
-        lock_.lock();
-        size = head_ - tail_;
-        lock_.unlock();
-        assert(size <= capacity_);
-        return size;
-    }
-
-    int push_front(T && item) {
+    template <typename U>
+    int inner_push_front(U && item) {
         lock_.lock();
 
         if ((head_ - tail_) > kCapacity) {
@@ -135,7 +197,8 @@ public:
         return OP_STATE_SUCCESS;
     }
 
-    int pop_front(T & item) {
+    template <typename U>
+    int inner_pop_front(U & item) {
         lock_.lock();
 
         if (head_ == tail_) {
@@ -152,17 +215,12 @@ public:
         lock_.unlock();
         return OP_STATE_SUCCESS;
     }
-
-    int push_front_ref(const T & item);
-    int pop_front_ref(T & item);
-
-    int push_front_point(const T * item);
-    int pop_front_point(T * item);
 }; // class Fixed_LockedRingQueue<T, ...>
 
 template <typename T, typename LockType = std::mutex,
           typename IndexType = uint64_t>
-class LockedRingQueue {
+class LockedRingQueue :
+    public LockedRingQueueCommon<LockedRingQueue<T, LockType, IndexType>, T> {
 public:
     typedef T               item_type;
     typedef T *             value_type;
@@ -174,15 +232,33 @@ public:
     static const index_type kDefaultCapacity = (index_type)compile_time::round_to_pow2<kQueueDefaultCapacity>::value;
     static const size_type  kAlignment = compile_time::round_to_pow2<kCacheLineSize>::value;
 
+    template <typename U, typename T>
+    friend class LockedRingQueueCommon;
+
 private:
-    index_type      head_;
-    index_type      tail_;
-    value_type      entries_;
-    index_type      index_mask_;
-    size_type       capacity_;
-    value_type      allocEntries_;
-    size_type       allocSize_;
-    lock_type       lock_;
+    index_type          head_;
+    index_type          tail_;
+    value_type          entries_;
+    index_type          index_mask_;
+    size_type           capacity_;
+    value_type          allocEntries_;
+    size_type           allocSize_;
+    mutable lock_type   lock_;
+
+public:
+    LockedRingQueue(uint32_t nCapacity = kDefaultCapacity)
+        : head_(kInitCursor), tail_(kInitCursor), capacity_(nCapacity), index_mask_(nCapacity - 1),
+          entries_(nullptr), allocEntries_(nullptr), allocSize_(0), lock_() {
+        capacity_ = internal_init(nCapacity);
+        index_mask_ = capacity_ - 1;
+        assert(run_time::is_pow2(capacity_));
+    }
+
+    virtual ~LockedRingQueue() {
+        lock_.lock();
+        free_queue_fast();
+        lock_.unlock();
+    }
 
 private:
     inline size_type internal_init(size_type nCapacity) {
@@ -215,21 +291,6 @@ protected:
         capacity_ = internal_init(nCapacity);
     }
 
-public:
-    LockedRingQueue(uint32_t nCapacity = kDefaultCapacity)
-        : head_(kInitCursor), tail_(kInitCursor), capacity_(nCapacity), index_mask_(nCapacity - 1),
-          entries_(nullptr), allocEntries_(nullptr), allocSize_(0), lock_() {
-        capacity_ = internal_init(nCapacity);
-        index_mask_ = capacity_ - 1;
-        assert(run_time::is_pow2(capacity_));
-    }
-
-    virtual ~LockedRingQueue() {
-        lock_.lock();
-        free_queue_fast();
-        lock_.unlock();
-    }
-
     inline void free_queue_fast() {
         if (allocEntries_) {
             delete[] allocEntries_;
@@ -256,39 +317,8 @@ public:
         }
     }
 
-    bool is_empty() const {
-        bool _isEmpty;
-        lock_.lock();
-        _isEmpty = (head_ == tail_);
-        lock_.unlock();
-        return _isEmpty;
-    }
-
-    size_type capacity() const {
-        return capacity_;
-    }
-
-    size_type sizes() {
-        size_type size;
-        lock_.lock();
-        size = head_ - tail_;
-        lock_.unlock();
-        assert(size <= capacity_);
-        return size;
-    }
-
-    void resize(size_type nCapacity) {
-        lock_.lock();
-        free_queue();
-        init(nCapacity);
-        lock_.unlock();
-    }
-
-    void create(size_type nCapacity) {
-        resize(nCapacity);
-    }
-
-    int push_front(T && item) {
+    template <typename U>
+    int inner_push_front(U && item) {
         lock_.lock();
 
         if ((head_ - tail_) > capacity_) {
@@ -306,7 +336,8 @@ public:
         return OP_STATE_SUCCESS;
     }
 
-    int pop_front(T & item) {
+    template <typename U>
+    int inner_pop_front(U & item) {
         lock_.lock();
 
         if (head_ == tail_) {
@@ -324,11 +355,6 @@ public:
         return OP_STATE_SUCCESS;
     }
 
-    int push_front_ref(const T & item);
-    int pop_front_ref(T & item);
-
-    int push_front_point(const T * item);
-    int pop_front_point(T * item);
 }; // class LockedRingQueue<T, ...>
 
 } // namespace FastQueue

@@ -126,6 +126,8 @@ int main(int argc, char * argv[])
     ASSERT_BOOLEAN_SUCCESS_EX("LockedRingQueue::pop_front()", success == OP_STATE_SUCCESS);
     ASSERT_BOOLEAN_PASSED_EX("LockedRingQueue::pop_front()", message.value == 1);
 
+    success = fixedLockedRingQueue.push_front(message);
+
     printf("\n");
 
     nSize = stdMutexRingQueue.sizes();
