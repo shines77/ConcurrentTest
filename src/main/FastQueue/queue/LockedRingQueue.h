@@ -36,7 +36,6 @@ public:
     typedef ImplType const *    const_pimpl_type;
     typedef ItemType            item_type;
     typedef std::size_t         size_type;
-    typedef typename impl_type::item_type   item_type2;
 
 public:
     LockedRingQueueAbstract() {}
