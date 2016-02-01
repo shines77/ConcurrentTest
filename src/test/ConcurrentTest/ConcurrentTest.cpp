@@ -60,6 +60,31 @@ public:
     }
 };
 
+namespace local {
+
+template <typename T, bool HasLocked = false>
+class scoped_lock {
+private:
+    typedef T lock_type;
+    lock_type & lock_;
+
+    scoped_lock(lock_type const &);
+    const scoped_lock & operator = (lock_type const &);
+
+public:
+    explicit scoped_lock(lock_type & lock) : lock_(lock) {
+        if (!HasLocked) {
+            lock_.lock();
+        }
+    }
+
+    ~scoped_lock() {
+        lock_.unlock();
+    }
+};
+
+} // namespace local
+
 template <typename T>
 class QueueWrapper {
 public:
@@ -68,32 +93,28 @@ public:
 };
 
 template <typename T>
-class StdQueueWrapper : public QueueWrapper< std::queue<T> > {
+class StdQueueWrapper : public QueueWrapper< StdQueueWrapper<T> > {
 public:
     typedef std::queue<T>   queue_type;
     typedef T               item_type;
 
 private:
-    std::mutex lock_;
+    std::mutex mutex_;
     queue_type queue_;
 
 public:
-    StdQueueWrapper() : lock_(), queue_() {}
+    StdQueueWrapper() : mutex_(), queue_() {}
     ~StdQueueWrapper() {}
 
     bool empty() const {
-        bool is_empty;
-        lock_.lock();
-        is_empty = queue_.empty();
-        lock_.unlock();
+        local::scoped_lock<std::mutex> lock(mutex_);
+        bool is_empty = queue_.empty();
         return is_empty;
     }
 
     size_t sizes() const {
-        size_t size;
-        lock_.lock();
-        size = queue_.sizes();
-        lock_.unlock();
+        local::scoped_lock<std::mutex> lock(mutex_);
+        size_t size = queue_.sizes();
         return size;
     }
 
@@ -101,119 +122,94 @@ public:
         // Do nothing!!
     }
 
-    void push(item_type const & item) {
-        lock_.lock();
-        queue_.push(item);
-        lock_.unlock();
-    }
-
-    void push(item_type && item) {
-        lock_.lock();
-        queue_.push(item);
-        lock_.unlock();
+    template <typename U>
+    void push(U && item) {
+        local::scoped_lock<std::mutex> lock(mutex_);
+        queue_.push(std::forward<U>(item));
     }
 
     item_type & back() {
-        lock_.lock();
+        local::scoped_lock<std::mutex> lock(mutex_);
         item_type & item = queue_.back();
-        lock_.unlock();
         return item;
     }
 
     void pop() {
-        lock_.lock();
+        local::scoped_lock<std::mutex> lock(mutex_);
         queue_.pop();
-        lock_.unlock();
     }
 
     int pop(item_type & item) {
-        lock_.lock();
+        local::scoped_lock<std::mutex> lock(mutex_);
         if (!queue_.empty()) {
             item_type & ret = queue_.back();
             item = std::move(ret);
             queue_.pop();
-            lock_.unlock();
             return true;
         }
         else {
-            lock_.unlock();
             return false;
         }
     }
 };
 
 template <typename T>
-class StdDequeueWrapper : public QueueWrapper< std::deque<T> > {
+class StdDequeueWrapper : public QueueWrapper< StdDequeueWrapper<T> > {
 public:
     typedef std::deque<T>   queue_type;
     typedef T               item_type;
 
 private:
-    std::mutex lock_;
+    std::mutex mutex_;
     queue_type queue_;
 
 public:
-    StdDequeueWrapper() : lock_(), queue_() {}
+    StdDequeueWrapper() : mutex_(), queue_() {}
     ~StdDequeueWrapper() {}
 
     bool empty() const {
-        bool is_empty;
-        lock_.lock();
-        is_empty = queue_.empty();
-        lock_.unlock();
+        local::scoped_lock<std::mutex> lock(mutex_);
+        bool is_empty = queue_.empty();
         return is_empty;
     }
 
     size_t sizes() const {
-        size_t size;
-        lock_.lock();
-        size = queue_.sizes();
-        lock_.unlock();
+        local::scoped_lock<std::mutex> lock(mutex_);
+        size_t size = queue_.sizes();
         return size;
     }
 
     void resize(size_t new_size) {
-        lock_.lock();
+        local::scoped_lock<std::mutex> lock(mutex_);
         queue_.resize(new_size);
-        lock_.unlock();
     }
 
-    void push(item_type const & item) {
-        lock_.lock();
-        queue_.push_front(item);
-        lock_.unlock();
-    }
-
-    void push(item_type && item) {
-        lock_.lock();
-        queue_.push_front(item);
-        lock_.unlock();
+    template <typename U>
+    void push(U && item) {
+        local::scoped_lock<std::mutex> lock(mutex_);
+        queue_.push_front(std::forward<U>(item));
     }
 
     item_type & back() {
-        lock_.lock();
+        local::scoped_lock<std::mutex> lock(mutex_);
         item_type & item = queue_.back();
-        lock_.unlock();
         return item;
     }
 
     void pop() {
-        lock_.lock();
+        local::scoped_lock<std::mutex> lock(mutex_);
         queue_.pop_back();
-        lock_.unlock();
     }
 
     int pop(item_type & item) {
-        lock_.lock();
+        local::scoped_lock<std::mutex> lock(mutex_);
         if (!queue_.empty()) {
             item_type & ret = queue_.back();
             item = std::move(ret);
             queue_.pop_back();
-            lock_.unlock();
             return true;
         }
         else {
-            lock_.unlock();
             return false;
         }
     }
@@ -226,35 +222,32 @@ public:
     typedef T                                           item_type;
 
 private:
-    queue_type queue;
+    queue_type queue_;
 
 public:
-    LockedRingQueueWrapper() : queue() {}
+    LockedRingQueueWrapper() : queue_() {}
     ~LockedRingQueueWrapper() {}
 
     bool empty() const {
-        return queue.is_empty();
+        return queue_.is_empty();
     }
 
     size_t sizes() const {
-        return queue.sizes();
+        return queue_.sizes();
     }
 
     void resize(size_t new_size) {
-        return queue.resize(new_size);
+        return queue_.resize(new_size);
     }
 
-    void push(item_type const & item) {
-        queue.push_front(item);
-    }
-
-    void push(item_type && item) {
-        queue.push_front(item);
+    template <typename U>
+    void push(U && item) {
+        queue_.push_front(std::forward<U>(item));
     }
 
     item_type & back() {
         item_type item;
-        if (queue.pop_back(item) == OP_STATE_SUCCESS) {
+        if (queue_.pop_back(item) == QUEUE_OP_SUCCESS) {
             return std::move(item);
         }
         else {
@@ -264,11 +257,11 @@ public:
 
     void pop() {
         item_type item;
-        queue.pop_back(item);
+        queue_.pop_back(item);
     }
 
     int pop(item_type & item) {
-        return queue.pop_back(item);
+        return queue_.pop_back(item);
     }
 };
 
@@ -279,35 +272,32 @@ public:
     typedef T                                                   item_type;
 
 private:
-    queue_type queue;
+    queue_type queue_;
 
 public:
-    FixedLockedRingQueueWrapper() : queue() {}
+    FixedLockedRingQueueWrapper() : queue_() {}
     ~FixedLockedRingQueueWrapper() {}
 
     bool empty() const {
-        return queue.is_empty();
+        return queue_.is_empty();
     }
 
     size_t sizes() const {
-        return queue.sizes();
+        return queue_.sizes();
     }
 
     void resize(size_t new_size) {
-        return queue.resize(new_size);
+        return queue_.resize(new_size);
     }
 
-    void push(item_type const & item) {
-        queue.push_front(item);
-    }
-
-    void push(item_type && item) {
-        queue.push_front(item);
+    template <typename U>
+    void push(U && item) {
+        queue_.push_front(std::forward<U>(item));
     }
 
     item_type & back() {
         item_type item;
-        if (queue.pop_back(item) == OP_STATE_SUCCESS) {
+        if (queue_.pop_back(item) == QUEUE_OP_SUCCESS) {
             return std::move(item);
         }
         else {
@@ -317,11 +307,11 @@ public:
 
     void pop() {
         item_type item;
-        queue.pop_back(item);
+        queue_.pop_back(item);
     }
 
     int pop(item_type & item) {
-        return queue.pop_back(item);
+        return queue_.pop_back(item);
     }
 };
 

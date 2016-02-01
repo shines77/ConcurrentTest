@@ -20,9 +20,9 @@ enum queue_trait_value_t {
 };
 
 enum queue_op_state_t {
-    OP_STATE_EMPTY = -2,
-    OP_STATE_FAILURE = -1,
-    OP_STATE_SUCCESS = 0
+    QUEUE_OP_FAILURE = -2,
+    QUEUE_OP_EMPTY = -1,
+    QUEUE_OP_SUCCESS = 0
 };
 
 template <typename ImplType, typename ItemType>
@@ -80,9 +80,9 @@ public:
     size_type sizes() const {
         const_pimpl_type pThis = const_cast_this();
         size_type size;
-        pThis->lock_.lock();
+        pThis->mutex_.lock();
         size = pThis->head_ - pThis->tail_;
-        pThis->lock_.unlock();
+        pThis->mutex_.unlock();
         assert(size <= pThis->capacity());
         return size;
     }
@@ -115,15 +115,15 @@ public:
     }
 };
 
-template <typename T, typename LockType = std::mutex,
+template <typename T, typename MutexType = std::mutex,
           typename IndexType = uint64_t,
           size_t initCapacity = kQueueDefaultCapacity>
 class FixedLockedRingQueue :
-    public LockedRingQueueAbstract<FixedLockedRingQueue<T, LockType, IndexType, initCapacity>, T> {
+    public LockedRingQueueAbstract<FixedLockedRingQueue<T, MutexType, IndexType, initCapacity>, T> {
 public:
     typedef T               item_type;
     typedef T *             value_type;
-    typedef LockType        lock_type;
+    typedef MutexType       mutex_type;
     typedef IndexType       index_type;
     typedef std::size_t     size_type;
 
@@ -143,19 +143,19 @@ private:
     size_type           capacity_;
     value_type          allocEntries_;
     size_type           allocSize_;
-    mutable lock_type   lock_;
+    mutable mutex_type  mutex_;
 
 public:
     FixedLockedRingQueue()
         : head_(kInitCursor), tail_(kInitCursor), capacity_(kCapacity),
-          entries_(nullptr), allocEntries_(nullptr), allocSize_(0), lock_() {
+          entries_(nullptr), allocEntries_(nullptr), allocSize_(0), mutex_() {
         init();
     }
 
     virtual ~FixedLockedRingQueue() {
-        lock_.lock();
+        mutex_.lock();
         free_queue();
-        lock_.unlock();
+        mutex_.unlock();
     }
 
 private:
@@ -192,11 +192,11 @@ protected:
 
     template <typename U>
     int inner_push_front(U && item) {
-        lock_.lock();
+        mutex_.lock();
 
         if ((head_ - tail_) > kCapacity) {
-            lock_.unlock();
-            return OP_STATE_EMPTY;
+            mutex_.unlock();
+            return QUEUE_OP_EMPTY;
         }
 
         index_type next = head_ + 1;
@@ -205,17 +205,17 @@ protected:
         entries_[index] = item;
         head_ = next;
 
-        lock_.unlock();
-        return OP_STATE_SUCCESS;
+        mutex_.unlock();
+        return QUEUE_OP_SUCCESS;
     }
 
     template <typename U>
     int inner_pop_back(U & item) {
-        lock_.lock();
+        mutex_.lock();
 
         if (head_ == tail_) {
-            lock_.unlock();
-            return OP_STATE_EMPTY;
+            mutex_.unlock();
+            return QUEUE_OP_EMPTY;
         }
 
         index_type next = tail_ + 1;
@@ -224,8 +224,8 @@ protected:
         item = entries_[index];
         tail_ = next;
 
-        lock_.unlock();
-        return OP_STATE_SUCCESS;
+        mutex_.unlock();
+        return QUEUE_OP_SUCCESS;
     }
 
 public:
@@ -235,14 +235,14 @@ public:
 
 }; // class Fixed_LockedRingQueue<T, ...>
 
-template <typename T, typename LockType = std::mutex,
+template <typename T, typename MutexType = std::mutex,
           typename IndexType = uint64_t>
 class LockedRingQueue :
-    public LockedRingQueueAbstract<LockedRingQueue<T, LockType, IndexType>, T> {
+    public LockedRingQueueAbstract<LockedRingQueue<T, MutexType, IndexType>, T> {
 public:
     typedef T               item_type;
     typedef T *             value_type;
-    typedef LockType        lock_type;
+    typedef MutexType       mutex_type;
     typedef IndexType       index_type;
     typedef std::size_t     size_type;
 
@@ -261,21 +261,21 @@ private:
     size_type           capacity_;
     value_type          allocEntries_;
     size_type           allocSize_;
-    mutable lock_type   lock_;
+    mutable mutex_type  mutex_;
 
 public:
     LockedRingQueue(size_type nCapacity = kDefaultCapacity)
         : head_(kInitCursor), tail_(kInitCursor), capacity_(nCapacity), index_mask_((index_type)(nCapacity - 1)),
-          entries_(nullptr), allocEntries_(nullptr), allocSize_(0), lock_() {
+          entries_(nullptr), allocEntries_(nullptr), allocSize_(0), mutex_() {
         capacity_ = internal_init(nCapacity);
         index_mask_ = (index_type)capacity_ - 1;
         assert(run_time::is_pow2(capacity_));
     }
 
     virtual ~LockedRingQueue() {
-        lock_.lock();
+        mutex_.lock();
         free_queue_fast();
-        lock_.unlock();
+        mutex_.unlock();
     }
 
 private:
@@ -337,11 +337,11 @@ protected:
 
     template <typename U>
     int inner_push_front(U && item) {
-        lock_.lock();
+        mutex_.lock();
 
         if ((head_ - tail_) > capacity_) {
-            lock_.unlock();
-            return OP_STATE_EMPTY;
+            mutex_.unlock();
+            return QUEUE_OP_EMPTY;
         }
 
         index_type next = head_ + 1;
@@ -350,17 +350,17 @@ protected:
         entries_[index] = item;
         head_ = next;
 
-        lock_.unlock();
-        return OP_STATE_SUCCESS;
+        mutex_.unlock();
+        return QUEUE_OP_SUCCESS;
     }
 
     template <typename U>
     int inner_pop_back(U & item) {
-        lock_.lock();
+        mutex_.lock();
 
         if (head_ == tail_) {
-            lock_.unlock();
-            return OP_STATE_EMPTY;
+            mutex_.unlock();
+            return QUEUE_OP_EMPTY;
         }
 
         index_type next = tail_ + 1;
@@ -369,16 +369,16 @@ protected:
         item = entries_[index];
         tail_ = next;
 
-        lock_.unlock();
-        return OP_STATE_SUCCESS;
+        mutex_.unlock();
+        return QUEUE_OP_SUCCESS;
     }
 
 public:
     void resize(size_type newCapacity) {
-        lock_.lock();
+        mutex_.lock();
         free_queue();
         init(newCapacity);
-        lock_.unlock();
+        mutex_.unlock();
     }
 
     void create(size_type nCapacity) {

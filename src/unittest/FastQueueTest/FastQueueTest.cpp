@@ -121,11 +121,11 @@ int main(int argc, char * argv[])
 
     message.value = 1;
     success = fixedLockedRingQueue.push_front(std::move(message));
-    ASSERT_BOOLEAN_SUCCESS_EX("LockedRingQueue::push_front()", success == OP_STATE_SUCCESS);
+    ASSERT_BOOLEAN_SUCCESS_EX("LockedRingQueue::push_front()", success == QUEUE_OP_SUCCESS);
     ASSERT_BOOLEAN_PASSED_EX("LockedRingQueue::push_front()", message.value == 1);
     message.value = 2;
     success = fixedLockedRingQueue.pop_back(message);
-    ASSERT_BOOLEAN_SUCCESS_EX("LockedRingQueue::pop_front()", success == OP_STATE_SUCCESS);
+    ASSERT_BOOLEAN_SUCCESS_EX("LockedRingQueue::pop_front()", success == QUEUE_OP_SUCCESS);
     ASSERT_BOOLEAN_PASSED_EX("LockedRingQueue::pop_front()", message.value == 1);
 
     success = fixedLockedRingQueue.push_front(message);
@@ -140,11 +140,11 @@ int main(int argc, char * argv[])
 
     message.value = 1;
     success = stdMutexRingQueue.push_front(std::move(message));
-    ASSERT_BOOLEAN_SUCCESS_EX("StdMutexRingQueue::push_front()", success == OP_STATE_SUCCESS);
+    ASSERT_BOOLEAN_SUCCESS_EX("StdMutexRingQueue::push_front()", success == QUEUE_OP_SUCCESS);
     ASSERT_BOOLEAN_PASSED_EX("StdMutexRingQueue::push_front()", message.value == 1);
     message.value = 2;
     success = stdMutexRingQueue.pop_back(message);
-    ASSERT_BOOLEAN_SUCCESS_EX("StdMutexRingQueue::pop_front()", success == OP_STATE_SUCCESS);
+    ASSERT_BOOLEAN_SUCCESS_EX("StdMutexRingQueue::pop_front()", success == QUEUE_OP_SUCCESS);
     ASSERT_BOOLEAN_PASSED_EX("StdMutexRingQueue::pop_front()", message.value == 1);
 
     printf("\n");
