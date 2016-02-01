@@ -46,10 +46,18 @@ public:
 
 public:
     Message() : value(0) {}
+    Message(Message const & src) {
+        this->value = src.value;
+    }
     Message(Message && src) {
         this->value = src.value;
     }
     ~Message() {}
+
+    Message & operator = (const Message & rhs) {
+        this->value = rhs.value;
+        return *this;
+    }
 };
 
 template <typename T>
@@ -440,9 +448,9 @@ int main(int argc, char * argv[])
     printf("Producers = %u\n", producers);
     printf("Consumers = %u\n", consumers);
 #if defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
-    printf("X86_64    = true\n");
+    printf("x86_64    = true\n");
 #else
-    printf("X86_64    = false\n");
+    printf("x86_64    = false\n");
 #endif
     printf("\n");
 

@@ -18,8 +18,6 @@ using namespace FastQueue;
 
 typedef double  jmc_timestamp_t;
 
-namespace FastQueueTest {
-
 enum benchmark_type_t {
     Boost_lockfree_queue,
     Intel_TBB_concurrent_queue,
@@ -60,8 +58,6 @@ jmc_timestamp_t runBenchmark(benchmark_type_t benchmark, uintptr_t messages, uin
     elapsedTime = 0.0 - startTime;
     return elapsedTime;
 }
-
-} // namespace ConcourrentTest
 
 #define ASSERT_BOOLEAN_TRUE(infoTrue, infoFalse, expr) \
     do {                                    \
@@ -108,8 +104,6 @@ jmc_timestamp_t runBenchmark(benchmark_type_t benchmark, uintptr_t messages, uin
     ASSERT_BOOLEAN_TRUE_EX("Success", "Failure", name, expr)
 
 #define DISPLAY_VALUE(fmt, __VARS__)  printf(fmt, __VARS__)
-
-using namespace FastQueueTest;
 
 int main(int argc, char * argv[])
 {
