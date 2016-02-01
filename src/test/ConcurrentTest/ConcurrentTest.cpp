@@ -376,14 +376,14 @@ void run_test_threads(unsigned producers, unsigned consumers)
 
     if (producer_threads) {
         for (unsigned i = 0; i < producers; ++i) {
-            std::thread * thread = new std::thread(&producer_thread_proc<queue_type, message_type>, i, producers, &queue);
+            std::thread * thread = new std::thread(producer_thread_proc<queue_type, message_type>, i, producers, &queue);
             producer_threads[i] = thread;
         }
     }
 
     if (consumer_threads) {
         for (unsigned i = 0; i < consumers; ++i) {
-            std::thread * thread = new std::thread(&consumer_thread_proc<queue_type, message_type>, i, consumers, &queue);
+            std::thread * thread = new std::thread(consumer_thread_proc<queue_type, message_type>, i, consumers, &queue);
             consumer_threads[i] = thread;
         }
     }
