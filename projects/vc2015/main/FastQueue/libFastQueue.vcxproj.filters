@@ -1,0 +1,91 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd;cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="src\basic">
+      <UniqueIdentifier>{31954108-2f18-4e84-8617-be247f78c06d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\config">
+      <UniqueIdentifier>{e6983777-eaf7-4c27-acef-159588a56014}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\system">
+      <UniqueIdentifier>{b15fc58e-3414-4088-866c-822351d850c6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\utils">
+      <UniqueIdentifier>{afca6fbc-492f-4864-aa67-7f1ebaa7403d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\basic\msvc">
+      <UniqueIdentifier>{813c2f36-60ea-4f2c-8546-9db6d3d5643b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\queue">
+      <UniqueIdentifier>{c10075fa-457f-4cbd-a904-5beade4b2dce}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\inttypes.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\stdbool.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\stddef.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\stdint.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\stdsize.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\threadlocal.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\msvc\inttypes.h">
+      <Filter>src\basic\msvc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\msvc\stdbool.h">
+      <Filter>src\basic\msvc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\msvc\stdint.h">
+      <Filter>src\basic\msvc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\msvc\targetver.h">
+      <Filter>src\basic\msvc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\msvc\vld.h">
+      <Filter>src\basic\msvc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\basic\static_link.h">
+      <Filter>src\basic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\system\sleep.h">
+      <Filter>src\system</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\utils\MinMax.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\utils\PowOf2.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\utils\Runtime.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\utils\StringUtils.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\utils\ToString.h">
+      <Filter>src\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\..\src\main\FastQueue\queue\LockedRingQueue.h">
+      <Filter>src\queue</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\src\main\FastQueue\system\sleep.c">
+      <Filter>src\system</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

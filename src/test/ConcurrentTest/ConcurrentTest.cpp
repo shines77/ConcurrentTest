@@ -19,14 +19,12 @@
 using namespace FastQueue;
 
 #if defined(NDEBUG)
-#define MAX_MESSAGE_COUNT   (100 * 10000)
+#define MAX_MESSAGE_COUNT   (800 * 10000)
 #else
 #define MAX_MESSAGE_COUNT   (50 * 10000)
 #endif
 
 typedef double  jmc_timestamp_t;
-
-std::mutex g_lock;
 
 enum {
     kMaxMessageCount = MAX_MESSAGE_COUNT
@@ -68,18 +66,27 @@ public:
     typedef T               item_type;
 
 private:
-    queue_type queue;
+    std::mutex lock_;
+    queue_type queue_;
 
 public:
-    StdQueueWapper() : queue() {}
+    StdQueueWapper() : lock_(), queue_() {}
     ~StdQueueWapper() {}
 
     bool empty() const {
-        return queue.empty();
+        bool is_empty;
+        lock_.lock();
+        is_empty = queue_.empty();
+        lock_.unlock();
+        return is_empty;
     }
 
     size_t sizes() const {
-        return queue.sizes();
+        size_t size;
+        lock_.lock();
+        size = queue_.sizes();
+        lock_.unlock();
+        return size;
     }
 
     void resize(size_t new_size) {
@@ -87,29 +94,41 @@ public:
     }
 
     void push(item_type const & item) {
-        queue.push(item);
+        lock_.lock();
+        queue_.push(item);
+        lock_.unlock();
     }
 
     void push(item_type && item) {
-        queue.push(item);
+        lock_.lock();
+        queue_.push(item);
+        lock_.unlock();
     }
 
     item_type & back() {
-        return queue.back();
+        lock_.lock();
+        item_type & item = queue_.back();
+        lock_.unlock();
+        return item;
     }
 
     void pop() {
-        queue.pop();
+        lock_.lock();
+        queue_.pop();
+        lock_.unlock();
     }
 
     int pop(item_type & item) {
-        if (!queue.empty()) {
-            item_type & ret = queue.back();
+        lock_.lock();
+        if (!queue_.empty()) {
+            item_type & ret = queue_.back();
             item = std::move(ret);
-            queue.pop();
+            queue_.pop();
+            lock_.unlock();
             return true;
         }
         else {
+            lock_.unlock();
             return false;
         }
     }
@@ -122,48 +141,71 @@ public:
     typedef T               item_type;
 
 private:
-    queue_type queue;
+    std::mutex lock_;
+    queue_type queue_;
 
 public:
-    StdDequeueWapper() : queue() {}
+    StdDequeueWapper() : lock_(), queue_() {}
     ~StdDequeueWapper() {}
 
     bool empty() const {
-        return queue.empty();
+        bool is_empty;
+        lock_.lock();
+        is_empty = queue_.empty();
+        lock_.unlock();
+        return is_empty;
     }
 
     size_t sizes() const {
-        return queue.sizes();
+        size_t size;
+        lock_.lock();
+        size = queue_.sizes();
+        lock_.unlock();
+        return size;
     }
 
     void resize(size_t new_size) {
-        return queue.resize(new_size);
+        lock_.lock();
+        queue_.resize(new_size);
+        lock_.unlock();
     }
 
     void push(item_type const & item) {
-        queue.push_front(item);
+        lock_.lock();
+        queue_.push_front(item);
+        lock_.unlock();
     }
 
     void push(item_type && item) {
-        queue.push_front(item);
+        lock_.lock();
+        queue_.push_front(item);
+        lock_.unlock();
     }
 
     item_type & back() {
-        return queue.back();
+        lock_.lock();
+        item_type & item = queue_.back();
+        lock_.unlock();
+        return item;
     }
 
     void pop() {
-        queue.pop_back();
+        lock_.lock();
+        queue_.pop_back();
+        lock_.unlock();
     }
 
     int pop(item_type & item) {
-        if (!queue.empty()) {
-            item_type & ret = queue.back();
+        lock_.lock();
+        if (!queue_.empty()) {
+            item_type & ret = queue_.back();
             item = std::move(ret);
-            queue.pop_back();
+            queue_.pop_back();
+            lock_.unlock();
             return true;
         }
         else {
+            lock_.unlock();
             return false;
         }
     }
@@ -205,8 +247,7 @@ public:
     item_type & back() {
         item_type item;
         if (queue.pop_back(item) == OP_STATE_SUCCESS) {
-            item_type &retval = item;
-            return retval;
+            return std::move(item);
         }
         else {
             throw ("LockedRingQueue<T> is empty!");
@@ -257,10 +298,9 @@ public:
     }
 
     item_type & back() {
-        item_type &item = *(new item_type());
+        item_type item;
         if (queue.pop_back(item) == OP_STATE_SUCCESS) {
-            item_type & retval = item;
-            return retval;
+            return std::move(item);
         }
         else {
             throw ("FixedLockedRingQueue<T> is empty!");
@@ -283,14 +323,12 @@ void producer_thread_proc(unsigned index, unsigned producers, QueueType * queue)
     typedef QueueType queue_type;
     typedef MessageType message_type;
 
-    printf("Producer Thread: thread_idx = %d, producers = %d, queue = 0x%08X.\n", index, producers, queue);
+    printf("Producer Thread: thread_idx = %d, producers = %d.\n", index, producers);
 
     unsigned messages = kMaxMessageCount / producers;
     for (unsigned i = 0; i < messages; ++i) {
         message_type * msg = new message_type();
-        g_lock.lock();
         queue->push(msg);
-        g_lock.unlock();
     }
 }
 
@@ -300,11 +338,10 @@ void consumer_thread_proc(unsigned index, unsigned consumers, QueueType * queue)
     typedef QueueType queue_type;
     typedef MessageType message_type;
 
-    printf("Consumer Thread: thread_idx = %d, consumers = %d, queue = 0x%08X.\n", index, consumers, queue);
+    printf("Consumer Thread: thread_idx = %d, consumers = %d.\n", index, consumers);
 
     unsigned messages = kMaxMessageCount / consumers;
     for (unsigned i = 0; i < messages; ++i) {
-        g_lock.lock();
 #if 0
         if (!queue->empty()) {
             message_type *& msg = queue->back();
@@ -314,7 +351,6 @@ void consumer_thread_proc(unsigned index, unsigned consumers, QueueType * queue)
         message_type * msg = nullptr;
         queue->pop(msg);
 #endif
-        g_lock.unlock();
     }
 }
 
@@ -380,15 +416,15 @@ void run_test(unsigned producers, unsigned consumers)
     typedef MessageType message_type;
 
     using namespace std::chrono;
-    system_clock::time_point startime = high_resolution_clock::now();
+    time_point<high_resolution_clock> startime = high_resolution_clock::now();
 
     run_test_threads<queue_type, message_type, InitSize>(producers, consumers);
 
-    system_clock::time_point endtime = high_resolution_clock::now();
+    time_point<high_resolution_clock> endtime = high_resolution_clock::now();
     duration<double> elapsed_time = duration_cast< duration<double> >(endtime - startime);
 
     printf("\n");
-    printf("Elapsed time: %0.3f second(s)\n", elapsed_time.count());
+    printf("elapsed time: %0.3f second(s)\n", elapsed_time.count());
     printf("\n");
 }
 
@@ -403,6 +439,11 @@ int main(int argc, char * argv[])
     printf("Messages  = %u\n", kMaxMessageCount);
     printf("Producers = %u\n", producers);
     printf("Consumers = %u\n", consumers);
+#if defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+    printf("X86_64    = true\n");
+#else
+    printf("X86_64    = false\n");
+#endif
     printf("\n");
 
     run_test<StdQueueWapper<Message *>, Message, 4096>(producers, consumers);

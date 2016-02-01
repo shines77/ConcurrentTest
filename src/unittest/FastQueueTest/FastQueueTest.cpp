@@ -36,10 +36,18 @@ public:
 
 public:
     Message() : value(0) {}
+    Message(Message const & src) {
+        this->value = src.value;
+    }
     Message(Message && src) {
         this->value = src.value;
     }
     ~Message() {}
+
+    Message & operator = (const Message & rhs) {
+        this->value = rhs.value;
+        return *this;
+    }
 };
 
 template <typename T, typename IndexType = uint64_t>
@@ -113,8 +121,8 @@ int main(int argc, char * argv[])
 
     size_t nSize = fixedLockedRingQueue.sizes();
     size_t nCapacity = fixedLockedRingQueue.capacity();
-    printf("fixedLockedRingQueue.sizes() = %d\n", nSize);
-    printf("fixedLockedRingQueue.capacity() = %d\n", nCapacity);
+    printf("fixedLockedRingQueue.sizes() = %zu\n", nSize);
+    printf("fixedLockedRingQueue.capacity() = %zu\n", nCapacity);
     printf("\n");
 
     message.value = 1;
@@ -132,8 +140,8 @@ int main(int argc, char * argv[])
 
     nSize = stdMutexRingQueue.sizes();
     nCapacity = stdMutexRingQueue.capacity();
-    printf("stdMutexRingQueue.sizes() = %d\n", nSize);
-    printf("stdMutexRingQueue.capacity() = %d\n", nCapacity);
+    printf("stdMutexRingQueue.sizes() = %zu\n", nSize);
+    printf("stdMutexRingQueue.capacity() = %zu\n", nCapacity);
     printf("\n");
 
     message.value = 1;
@@ -169,23 +177,23 @@ int main(int argc, char * argv[])
 
     size_t checkVal;
     checkVal = run_time::verify_pow2(0xFFFFFFFFUL);
-    printf("verify_pow2(0xFFFFFFFFUL) : %d\n", checkVal);
+    printf("verify_pow2(0xFFFFFFFFUL) : %zu\n", checkVal);
     checkVal = run_time::verify_pow2(0);
-    printf("verify_pow2(0) : %d\n", checkVal);
+    printf("verify_pow2(0) : %zu\n", checkVal);
     checkVal = run_time::verify_pow2(1);
-    printf("verify_pow2(1) : %d\n", checkVal);
+    printf("verify_pow2(1) : %zu\n", checkVal);
     checkVal = run_time::verify_pow2(2);
-    printf("verify_pow2(2) : %d\n", checkVal);
+    printf("verify_pow2(2) : %zu\n", checkVal);
     checkVal = run_time::verify_pow2(3);
-    printf("verify_pow2(3) : %d\n", checkVal);
+    printf("verify_pow2(3) : %zu\n", checkVal);
     checkVal = run_time::verify_pow2(4);
-    printf("verify_pow2(4) : %d\n", checkVal);
+    printf("verify_pow2(4) : %zu\n", checkVal);
     checkVal = run_time::verify_pow2(16);
-    printf("verify_pow2(16) : %d\n", checkVal);
+    printf("verify_pow2(16) : %zu\n", checkVal);
     checkVal = run_time::verify_pow2(17);
-    printf("verify_pow2(17) : %d\n", checkVal);
+    printf("verify_pow2(17) : %zu\n", checkVal);
     checkVal = run_time::verify_pow2(37);
-    printf("verify_pow2(37) : %d\n", checkVal);
+    printf("verify_pow2(37) : %zu\n", checkVal);
 
     printf("\n");
 

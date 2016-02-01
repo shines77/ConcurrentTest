@@ -264,11 +264,11 @@ private:
     mutable lock_type   lock_;
 
 public:
-    LockedRingQueue(uint32_t nCapacity = kDefaultCapacity)
-        : head_(kInitCursor), tail_(kInitCursor), capacity_(nCapacity), index_mask_(nCapacity - 1),
+    LockedRingQueue(size_type nCapacity = kDefaultCapacity)
+        : head_(kInitCursor), tail_(kInitCursor), capacity_(nCapacity), index_mask_((index_type)(nCapacity - 1)),
           entries_(nullptr), allocEntries_(nullptr), allocSize_(0), lock_() {
         capacity_ = internal_init(nCapacity);
-        index_mask_ = capacity_ - 1;
+        index_mask_ = (index_type)capacity_ - 1;
         assert(run_time::is_pow2(capacity_));
     }
 
