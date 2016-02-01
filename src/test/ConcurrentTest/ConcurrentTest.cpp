@@ -61,14 +61,14 @@ public:
 };
 
 template <typename T>
-class QueueWapper {
+class QueueWrapper {
 public:
-    QueueWapper() {}
-    ~QueueWapper() {}
+    QueueWrapper() {}
+    ~QueueWrapper() {}
 };
 
 template <typename T>
-class StdQueueWapper : public QueueWapper< std::queue<T> > {
+class StdQueueWrapper : public QueueWrapper< std::queue<T> > {
 public:
     typedef std::queue<T>   queue_type;
     typedef T               item_type;
@@ -78,8 +78,8 @@ private:
     queue_type queue_;
 
 public:
-    StdQueueWapper() : lock_(), queue_() {}
-    ~StdQueueWapper() {}
+    StdQueueWrapper() : lock_(), queue_() {}
+    ~StdQueueWrapper() {}
 
     bool empty() const {
         bool is_empty;
@@ -143,7 +143,7 @@ public:
 };
 
 template <typename T>
-class StdDequeueWapper : public QueueWapper< std::deque<T> > {
+class StdDequeueWrapper : public QueueWrapper< std::deque<T> > {
 public:
     typedef std::deque<T>   queue_type;
     typedef T               item_type;
@@ -153,8 +153,8 @@ private:
     queue_type queue_;
 
 public:
-    StdDequeueWapper() : lock_(), queue_() {}
-    ~StdDequeueWapper() {}
+    StdDequeueWrapper() : lock_(), queue_() {}
+    ~StdDequeueWrapper() {}
 
     bool empty() const {
         bool is_empty;
@@ -220,7 +220,7 @@ public:
 };
 
 template <typename T>
-class LockedRingQueueWapper : public QueueWapper< LockedRingQueue<T, std::mutex, uint64_t> > {
+class LockedRingQueueWrapper : public QueueWrapper< LockedRingQueue<T, std::mutex, uint64_t> > {
 public:
     typedef LockedRingQueue<T, std::mutex, uint64_t>    queue_type;
     typedef T                                           item_type;
@@ -229,8 +229,8 @@ private:
     queue_type queue;
 
 public:
-    LockedRingQueueWapper() : queue() {}
-    ~LockedRingQueueWapper() {}
+    LockedRingQueueWrapper() : queue() {}
+    ~LockedRingQueueWrapper() {}
 
     bool empty() const {
         return queue.is_empty();
@@ -273,7 +273,7 @@ public:
 };
 
 template <typename T>
-class FixedLockedRingQueueWapper : public QueueWapper< FixedLockedRingQueue<T, std::mutex, uint64_t> > {
+class FixedLockedRingQueueWrapper : public QueueWrapper< FixedLockedRingQueue<T, std::mutex, uint64_t> > {
 public:
     typedef FixedLockedRingQueue<T, std::mutex, uint64_t, 4096> queue_type;
     typedef T                                                   item_type;
@@ -282,8 +282,8 @@ private:
     queue_type queue;
 
 public:
-    FixedLockedRingQueueWapper() : queue() {}
-    ~FixedLockedRingQueueWapper() {}
+    FixedLockedRingQueueWrapper() : queue() {}
+    ~FixedLockedRingQueueWrapper() {}
 
     bool empty() const {
         return queue.is_empty();
@@ -457,11 +457,11 @@ int main(int argc, char * argv[])
 #endif
     printf("\n");
 
-    run_test<StdQueueWapper<Message *>, Message, 4096>(producers, consumers);
-    run_test<StdDequeueWapper<Message *>, Message, 4096>(producers, consumers);
+    run_test<StdQueueWrapper<Message *>, Message, 4096>(producers, consumers);
+    run_test<StdDequeueWrapper<Message *>, Message, 4096>(producers, consumers);
 
-    run_test<LockedRingQueueWapper<Message *>, Message, 4096>(producers, consumers);
-    run_test<FixedLockedRingQueueWapper<Message *>, Message, 4096>(producers, consumers);
+    run_test<LockedRingQueueWrapper<Message *>, Message, 4096>(producers, consumers);
+    run_test<FixedLockedRingQueueWrapper<Message *>, Message, 4096>(producers, consumers);
 
     printf("\n");
     ::system("pause");
