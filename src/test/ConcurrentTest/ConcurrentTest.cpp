@@ -331,7 +331,7 @@ void producer_thread_proc(unsigned index, unsigned producers, QueueType * queue)
     typedef QueueType queue_type;
     typedef MessageType message_type;
 
-    printf("Producer Thread: thread_idx = %d, producers = %d.\n", index, producers);
+    //printf("Producer Thread: thread_idx = %d, producers = %d.\n", index, producers);
 
     unsigned messages = kMaxMessageCount / producers;
     for (unsigned i = 0; i < messages; ++i) {
@@ -346,7 +346,7 @@ void consumer_thread_proc(unsigned index, unsigned consumers, QueueType * queue)
     typedef QueueType queue_type;
     typedef MessageType message_type;
 
-    printf("Consumer Thread: thread_idx = %d, consumers = %d.\n", index, consumers);
+    //printf("Consumer Thread: thread_idx = %d, consumers = %d.\n", index, consumers);
 
     unsigned messages = kMaxMessageCount / consumers;
     for (unsigned i = 0; i < messages; ++i) {
@@ -423,6 +423,9 @@ void run_test(unsigned producers, unsigned consumers)
     typedef QueueType queue_type;
     typedef MessageType message_type;
 
+    printf("Test for: %s\n", typeid(queue_type).name());
+    printf("\n");
+
     using namespace std::chrono;
     time_point<high_resolution_clock> startime = high_resolution_clock::now();
 
@@ -431,7 +434,7 @@ void run_test(unsigned producers, unsigned consumers)
     time_point<high_resolution_clock> endtime = high_resolution_clock::now();
     duration<double> elapsed_time = duration_cast< duration<double> >(endtime - startime);
 
-    printf("\n");
+    //printf("\n");
     printf("elapsed time: %0.3f second(s)\n", elapsed_time.count());
     printf("\n");
 }
