@@ -87,27 +87,39 @@ public:
         return size;
     }
 
-    inline int push_front(item_type const & item) {
+    int push_front(item_type const & item) {
         pimpl_type pThis = staic_cast_this();
         return pThis->inner_push_front(item);
     }
 
-    inline int push_front(item_type && item) {
+    int push_front(item_type && item) {
         pimpl_type pThis = staic_cast_this();
         return pThis->inner_push_front(std::move(item));
     }
 
-    inline int pop_front(item_type & item) {
+    int pop_back(item_type & item) {
         pimpl_type pThis = staic_cast_this();
-        return pThis->inner_pop_front(item);
+        return pThis->inner_pop_back(item);
+    }
+
+    int push(item_type const & item) {
+        return this->push_front(item);
+    }
+
+    int push(item_type && item) {
+        return this->push_front(item);
+    }
+
+    int pop(item_type & item) {
+        return this->pop_back(item);
     }
 };
 
 template <typename T, typename LockType = std::mutex,
           typename IndexType = uint64_t,
           size_t initCapacity = kQueueDefaultCapacity>
-class Fixed_LockedRingQueue :
-    public LockedRingQueueAbstract<Fixed_LockedRingQueue<T, LockType, IndexType, initCapacity>, T> {
+class FixedLockedRingQueue :
+    public LockedRingQueueAbstract<FixedLockedRingQueue<T, LockType, IndexType, initCapacity>, T> {
 public:
     typedef T               item_type;
     typedef T *             value_type;
@@ -134,13 +146,13 @@ private:
     mutable lock_type   lock_;
 
 public:
-    Fixed_LockedRingQueue()
+    FixedLockedRingQueue()
         : head_(kInitCursor), tail_(kInitCursor), capacity_(kCapacity),
           entries_(nullptr), allocEntries_(nullptr), allocSize_(0), lock_() {
         init();
     }
 
-    virtual ~Fixed_LockedRingQueue() {
+    virtual ~FixedLockedRingQueue() {
         lock_.lock();
         free_queue();
         lock_.unlock();
@@ -198,7 +210,7 @@ protected:
     }
 
     template <typename U>
-    int inner_pop_front(U & item) {
+    int inner_pop_back(U & item) {
         lock_.lock();
 
         if (head_ == tail_) {
@@ -215,6 +227,12 @@ protected:
         lock_.unlock();
         return OP_STATE_SUCCESS;
     }
+
+public:
+    void resize(size_type new_size) {
+        // Do nothing!!
+    }
+
 }; // class Fixed_LockedRingQueue<T, ...>
 
 template <typename T, typename LockType = std::mutex,
@@ -337,7 +355,7 @@ protected:
     }
 
     template <typename U>
-    int inner_pop_front(U & item) {
+    int inner_pop_back(U & item) {
         lock_.lock();
 
         if (head_ == tail_) {
@@ -353,6 +371,18 @@ protected:
 
         lock_.unlock();
         return OP_STATE_SUCCESS;
+    }
+
+public:
+    void resize(size_type newCapacity) {
+        lock_.lock();
+        free_queue();
+        init(newCapacity);
+        lock_.unlock();
+    }
+
+    void create(size_type nCapacity) {
+        resize(nCapacity);
     }
 
 }; // class LockedRingQueue<T, ...>

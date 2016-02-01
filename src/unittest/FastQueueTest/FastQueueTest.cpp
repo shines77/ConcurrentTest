@@ -105,7 +105,7 @@ using namespace FastQueueTest;
 
 int main(int argc, char * argv[])
 {
-    Fixed_LockedRingQueue<Message, std::mutex, uint32_t, 511> fixedLockedRingQueue;
+    FixedLockedRingQueue<Message, std::mutex, uint32_t, 511> fixedLockedRingQueue;
     StdMutexRingQueue<Message, uint32_t> stdMutexRingQueue(511);
 
     Message message;
@@ -122,7 +122,7 @@ int main(int argc, char * argv[])
     ASSERT_BOOLEAN_SUCCESS_EX("LockedRingQueue::push_front()", success == OP_STATE_SUCCESS);
     ASSERT_BOOLEAN_PASSED_EX("LockedRingQueue::push_front()", message.value == 1);
     message.value = 2;
-    success = fixedLockedRingQueue.pop_front(message);
+    success = fixedLockedRingQueue.pop_back(message);
     ASSERT_BOOLEAN_SUCCESS_EX("LockedRingQueue::pop_front()", success == OP_STATE_SUCCESS);
     ASSERT_BOOLEAN_PASSED_EX("LockedRingQueue::pop_front()", message.value == 1);
 
@@ -141,7 +141,7 @@ int main(int argc, char * argv[])
     ASSERT_BOOLEAN_SUCCESS_EX("StdMutexRingQueue::push_front()", success == OP_STATE_SUCCESS);
     ASSERT_BOOLEAN_PASSED_EX("StdMutexRingQueue::push_front()", message.value == 1);
     message.value = 2;
-    success = stdMutexRingQueue.pop_front(message);
+    success = stdMutexRingQueue.pop_back(message);
     ASSERT_BOOLEAN_SUCCESS_EX("StdMutexRingQueue::pop_front()", success == OP_STATE_SUCCESS);
     ASSERT_BOOLEAN_PASSED_EX("StdMutexRingQueue::pop_front()", message.value == 1);
 

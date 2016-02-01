@@ -8,18 +8,29 @@
 #include <atomic>
 #include <mutex>
 #include <thread>
+#include <queue>
 #include <deque>
 #include <type_traits>
 
 #include <assert.h>
 
+#include <FastQueue/queue/LockedRingQueue.h>
+
+using namespace FastQueue;
+
+#if defined(NDEBUG)
 #define MAX_MESSAGE_COUNT   (100 * 10000)
+#else
+#define MAX_MESSAGE_COUNT   (50 * 10000)
+#endif
 
 typedef double  jmc_timestamp_t;
 
 std::mutex g_lock;
 
-namespace ConcourrentTest {
+enum {
+    kMaxMessageCount = MAX_MESSAGE_COUNT
+};
 
 enum benchmark_type_t {
     Boost_lockfree_queue,
@@ -43,86 +54,362 @@ public:
     ~Message() {}
 };
 
-} // namespace ConcourrentTest
-
-using namespace ConcourrentTest;
+template <typename T>
+class QueueWapper {
+public:
+    QueueWapper() {}
+    ~QueueWapper() {}
+};
 
 template <typename T>
-int producer_thread_proc(int thread_idx, T * queue)
-{
-    printf("Producer Thread: thread_idx = %d, queue = 0x%08X.\n", thread_idx, queue);
+class StdQueueWapper : public QueueWapper< std::queue<T> > {
+public:
+    typedef std::queue<T>   queue_type;
+    typedef T               item_type;
 
-    for (int i = 0; i < MAX_MESSAGE_COUNT; ++i) {
-        Message * msg = new Message();
-        g_lock.lock();
-        queue->push_front(msg);
-        g_lock.unlock();
+private:
+    queue_type queue;
+
+public:
+    StdQueueWapper() : queue() {}
+    ~StdQueueWapper() {}
+
+    bool empty() const {
+        return queue.empty();
     }
-    return 0;
-}
 
-template <typename T>
-int consumer_thread_proc(int thread_idx, T * queue)
-{
-    printf("Consumer Thread: thread_idx = %d, queue = 0x%08X.\n", thread_idx, queue);
+    size_t sizes() const {
+        return queue.sizes();
+    }
 
-    for (int i = 0; i < MAX_MESSAGE_COUNT; ++i) {
-        g_lock.lock();
-        Message *& msg = queue->back();
-        if (msg) {
-            queue->pop_back();
+    void resize(size_t new_size) {
+        // Do nothing!!
+    }
+
+    void push(item_type const & item) {
+        queue.push(item);
+    }
+
+    void push(item_type && item) {
+        queue.push(item);
+    }
+
+    item_type & back() {
+        return queue.back();
+    }
+
+    void pop() {
+        queue.pop();
+    }
+
+    int pop(item_type & item) {
+        if (!queue.empty()) {
+            item_type & ret = queue.back();
+            item = std::move(ret);
+            queue.pop();
+            return true;
         }
+        else {
+            return false;
+        }
+    }
+};
+
+template <typename T>
+class StdDequeueWapper : public QueueWapper< std::deque<T> > {
+public:
+    typedef std::deque<T>   queue_type;
+    typedef T               item_type;
+
+private:
+    queue_type queue;
+
+public:
+    StdDequeueWapper() : queue() {}
+    ~StdDequeueWapper() {}
+
+    bool empty() const {
+        return queue.empty();
+    }
+
+    size_t sizes() const {
+        return queue.sizes();
+    }
+
+    void resize(size_t new_size) {
+        return queue.resize(new_size);
+    }
+
+    void push(item_type const & item) {
+        queue.push_front(item);
+    }
+
+    void push(item_type && item) {
+        queue.push_front(item);
+    }
+
+    item_type & back() {
+        return queue.back();
+    }
+
+    void pop() {
+        queue.pop_back();
+    }
+
+    int pop(item_type & item) {
+        if (!queue.empty()) {
+            item_type & ret = queue.back();
+            item = std::move(ret);
+            queue.pop_back();
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+};
+
+template <typename T>
+class LockedRingQueueWapper : public QueueWapper< LockedRingQueue<T, std::mutex, uint64_t> > {
+public:
+    typedef LockedRingQueue<T, std::mutex, uint64_t>    queue_type;
+    typedef T                                           item_type;
+
+private:
+    queue_type queue;
+
+public:
+    LockedRingQueueWapper() : queue() {}
+    ~LockedRingQueueWapper() {}
+
+    bool empty() const {
+        return queue.is_empty();
+    }
+
+    size_t sizes() const {
+        return queue.sizes();
+    }
+
+    void resize(size_t new_size) {
+        return queue.resize(new_size);
+    }
+
+    void push(item_type const & item) {
+        queue.push_front(item);
+    }
+
+    void push(item_type && item) {
+        queue.push_front(item);
+    }
+
+    item_type & back() {
+        item_type item;
+        if (queue.pop_back(item) == OP_STATE_SUCCESS) {
+            item_type &retval = item;
+            return retval;
+        }
+        else {
+            throw ("LockedRingQueue<T> is empty!");
+        }
+    }
+
+    void pop() {
+        item_type item;
+        queue.pop_back(item);
+    }
+
+    int pop(item_type & item) {
+        return queue.pop_back(item);
+    }
+};
+
+template <typename T>
+class FixedLockedRingQueueWapper : public QueueWapper< FixedLockedRingQueue<T, std::mutex, uint64_t> > {
+public:
+    typedef FixedLockedRingQueue<T, std::mutex, uint64_t, 4096> queue_type;
+    typedef T                                                   item_type;
+
+private:
+    queue_type queue;
+
+public:
+    FixedLockedRingQueueWapper() : queue() {}
+    ~FixedLockedRingQueueWapper() {}
+
+    bool empty() const {
+        return queue.is_empty();
+    }
+
+    size_t sizes() const {
+        return queue.sizes();
+    }
+
+    void resize(size_t new_size) {
+        return queue.resize(new_size);
+    }
+
+    void push(item_type const & item) {
+        queue.push_front(item);
+    }
+
+    void push(item_type && item) {
+        queue.push_front(item);
+    }
+
+    item_type & back() {
+        item_type &item = *(new item_type());
+        if (queue.pop_back(item) == OP_STATE_SUCCESS) {
+            item_type & retval = item;
+            return retval;
+        }
+        else {
+            throw ("FixedLockedRingQueue<T> is empty!");
+        }
+    }
+
+    void pop() {
+        item_type item;
+        queue.pop_back(item);
+    }
+
+    int pop(item_type & item) {
+        return queue.pop_back(item);
+    }
+};
+
+template <typename QueueType, typename MessageType>
+void producer_thread_proc(unsigned index, unsigned producers, QueueType * queue)
+{
+    typedef QueueType queue_type;
+    typedef MessageType message_type;
+
+    printf("Producer Thread: thread_idx = %d, producers = %d, queue = 0x%08X.\n", index, producers, queue);
+
+    unsigned messages = kMaxMessageCount / producers;
+    for (unsigned i = 0; i < messages; ++i) {
+        message_type * msg = new message_type();
+        g_lock.lock();
+        queue->push(msg);
         g_lock.unlock();
     }
-    return 0;
 }
 
-void run_test_threads(int producers, int consumers)
+template <typename QueueType, typename MessageType>
+void consumer_thread_proc(unsigned index, unsigned consumers, QueueType * queue)
 {
-    std::deque<Message *> queue;
+    typedef QueueType queue_type;
+    typedef MessageType message_type;
+
+    printf("Consumer Thread: thread_idx = %d, consumers = %d, queue = 0x%08X.\n", index, consumers, queue);
+
+    unsigned messages = kMaxMessageCount / consumers;
+    for (unsigned i = 0; i < messages; ++i) {
+        g_lock.lock();
+#if 0
+        if (!queue->empty()) {
+            message_type *& msg = queue->back();
+            queue->pop();
+        }
+#else
+        message_type * msg = nullptr;
+        queue->pop(msg);
+#endif
+        g_lock.unlock();
+    }
+}
+
+template <typename QueueType, typename MessageType, size_t InitSize>
+void run_test_threads(unsigned producers, unsigned consumers)
+{
+    typedef QueueType queue_type;
+    typedef MessageType message_type;
+
+    queue_type queue;
+    queue.resize(InitSize);
+
     std::thread  ** producer_threads = new std::thread *[producers];
     std::thread  ** consumer_threads = new std::thread *[consumers];
 
-    for (int i = 0; i < producers; ++i) {
-        std::thread * thread = new std::thread(&producer_thread_proc<std::deque<Message *>>, i, &queue);
-        producer_threads[i] = thread;
+    if (producer_threads) {
+        for (unsigned i = 0; i < producers; ++i) {
+            std::thread * thread = new std::thread(&producer_thread_proc<queue_type, message_type>, i, producers, &queue);
+            producer_threads[i] = thread;
+        }
     }
 
-    for (int i = 0; i < consumers; ++i) {
-        std::thread * thread = new std::thread(&consumer_thread_proc<std::deque<Message *>>, i, &queue);
-        consumer_threads[i] = thread;
-    }
-
-    for (int i = 0; i < producers; ++i) {
-        producer_threads[i]->join();
-    }
-
-    for (int i = 0; i < consumers; ++i) {
-        consumer_threads[i]->join();
+    if (consumer_threads) {
+        for (unsigned i = 0; i < consumers; ++i) {
+            std::thread * thread = new std::thread(&consumer_thread_proc<queue_type, message_type>, i, consumers, &queue);
+            consumer_threads[i] = thread;
+        }
     }
 
     if (producer_threads) {
-        for (int i = 0; i < producers; ++i) {
-            delete producer_threads[i];
+        for (unsigned i = 0; i < producers; ++i) {
+            producer_threads[i]->join();
+        }
+    }
+
+    if (consumer_threads) {
+        for (unsigned i = 0; i < consumers; ++i) {
+            consumer_threads[i]->join();
+        }
+    }
+
+    if (producer_threads) {
+        for (unsigned i = 0; i < producers; ++i) {
+            if (producer_threads[i])
+                delete producer_threads[i];
         }
         delete[] producer_threads;
     }
 
     if (consumer_threads) {
-        for (int i = 0; i < consumers; ++i) {
-            delete consumer_threads[i];
+        for (unsigned i = 0; i < consumers; ++i) {
+            if (consumer_threads[i])
+                delete consumer_threads[i];
         }
         delete[] consumer_threads;
     }
 }
 
+template <typename QueueType, typename MessageType, size_t InitSize>
+void run_test(unsigned producers, unsigned consumers)
+{
+    typedef QueueType queue_type;
+    typedef MessageType message_type;
+
+    using namespace std::chrono;
+    system_clock::time_point startime = high_resolution_clock::now();
+
+    run_test_threads<queue_type, message_type, InitSize>(producers, consumers);
+
+    system_clock::time_point endtime = high_resolution_clock::now();
+    duration<double> elapsed_time = duration_cast< duration<double> >(endtime - startime);
+
+    printf("\n");
+    printf("Elapsed time: %0.3f second(s)\n", elapsed_time.count());
+    printf("\n");
+}
+
 int main(int argc, char * argv[])
 {
-    int thread_num = 4;
+    unsigned producers, consumers;
+    producers = 2;
+    consumers = 2;
+
     printf("ConcurrentTest.\n");
     printf("\n");
+    printf("Messages  = %u\n", kMaxMessageCount);
+    printf("Producers = %u\n", producers);
+    printf("Consumers = %u\n", consumers);
+    printf("\n");
 
-    run_test_threads(4, 4);
+    run_test<StdQueueWapper<Message *>, Message, 4096>(producers, consumers);
+    run_test<StdDequeueWapper<Message *>, Message, 4096>(producers, consumers);
+
+    run_test<LockedRingQueueWapper<Message *>, Message, 4096>(producers, consumers);
+    run_test<FixedLockedRingQueueWapper<Message *>, Message, 4096>(producers, consumers);
 
     printf("\n");
     ::system("pause");
