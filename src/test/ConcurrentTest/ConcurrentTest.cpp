@@ -60,26 +60,29 @@ public:
     }
 };
 
+#define JIMI_DEFAULT_METHOD     default
+#define JIMI_DELETE_METHOD      delete
+
 namespace local {
 
 template <typename T, bool HasLocked = false>
 class scoped_lock {
 private:
-    typedef T lock_type;
-    lock_type & lock_;
+    typedef T mutex_type;
+    mutex_type & mutex_;
 
-    scoped_lock(lock_type const &);
-    const scoped_lock & operator = (lock_type const &);
+    scoped_lock(mutex_type const &) = JIMI_DELETE_METHOD;
+    scoped_lock & operator = (mutex_type const &) = JIMI_DELETE_METHOD;
 
 public:
-    explicit scoped_lock(lock_type & lock) : lock_(lock) {
+    explicit scoped_lock(mutex_type & mutex) : mutex_(mutex) {
         if (!HasLocked) {
-            lock_.lock();
+            mutex_.lock();
         }
     }
 
     ~scoped_lock() {
-        lock_.unlock();
+        mutex_.unlock();
     }
 };
 
@@ -92,14 +95,15 @@ public:
     ~QueueWrapper() {}
 };
 
-template <typename T>
-class StdQueueWrapper : public QueueWrapper< StdQueueWrapper<T> > {
+template <typename T, typename MutexType>
+class StdQueueWrapper : public QueueWrapper< StdQueueWrapper<T, MutexType> > {
 public:
     typedef std::queue<T>   queue_type;
     typedef T               item_type;
+    typedef MutexType       mutex_type;
 
 private:
-    std::mutex mutex_;
+    mutex_type mutex_;
     queue_type queue_;
 
 public:
@@ -107,13 +111,13 @@ public:
     ~StdQueueWrapper() {}
 
     bool empty() const {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         bool is_empty = queue_.empty();
         return is_empty;
     }
 
     size_t sizes() const {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         size_t size = queue_.sizes();
         return size;
     }
@@ -124,23 +128,23 @@ public:
 
     template <typename U>
     void push(U && item) {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         queue_.push(std::forward<U>(item));
     }
 
     item_type & back() {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         item_type & item = queue_.back();
         return item;
     }
 
     void pop() {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         queue_.pop();
     }
 
     int pop(item_type & item) {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         if (!queue_.empty()) {
             item_type & ret = queue_.back();
             item = std::move(ret);
@@ -153,14 +157,15 @@ public:
     }
 };
 
-template <typename T>
-class StdDequeueWrapper : public QueueWrapper< StdDequeueWrapper<T> > {
+template <typename T, typename MutexType>
+class StdDequeueWrapper : public QueueWrapper< StdDequeueWrapper<T, MutexType> > {
 public:
     typedef std::deque<T>   queue_type;
     typedef T               item_type;
+    typedef MutexType       mutex_type;
 
 private:
-    std::mutex mutex_;
+    mutex_type mutex_;
     queue_type queue_;
 
 public:
@@ -168,41 +173,41 @@ public:
     ~StdDequeueWrapper() {}
 
     bool empty() const {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         bool is_empty = queue_.empty();
         return is_empty;
     }
 
     size_t sizes() const {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         size_t size = queue_.sizes();
         return size;
     }
 
     void resize(size_t new_size) {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         queue_.resize(new_size);
     }
 
     template <typename U>
     void push(U && item) {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         queue_.push_front(std::forward<U>(item));
     }
 
     item_type & back() {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         item_type & item = queue_.back();
         return item;
     }
 
     void pop() {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         queue_.pop_back();
     }
 
     int pop(item_type & item) {
-        local::scoped_lock<std::mutex> lock(mutex_);
+        local::scoped_lock<mutex_type> lock(mutex_);
         if (!queue_.empty()) {
             item_type & ret = queue_.back();
             item = std::move(ret);
@@ -215,11 +220,12 @@ public:
     }
 };
 
-template <typename T>
-class LockedRingQueueWrapper : public QueueWrapper< LockedRingQueue<T, std::mutex, uint64_t> > {
+template <typename T, typename MutexType, typename IndexType>
+class LockedRingQueueWrapper
+    : public QueueWrapper< LockedRingQueueWrapper<T, MutexType, IndexType> > {
 public:
-    typedef LockedRingQueue<T, std::mutex, uint64_t>    queue_type;
-    typedef T                                           item_type;
+    typedef LockedRingQueue<T, MutexType, IndexType> queue_type;
+    typedef T item_type;
 
 private:
     queue_type queue_;
@@ -265,11 +271,13 @@ public:
     }
 };
 
-template <typename T>
-class FixedLockedRingQueueWrapper : public QueueWrapper< FixedLockedRingQueue<T, std::mutex, uint64_t> > {
+template <typename T, typename MutexType, typename IndexType,
+          size_t InitCapacity = kQueueDefaultCapacity>
+class FixedLockedRingQueueWrapper
+    : public QueueWrapper< FixedLockedRingQueueWrapper<T, MutexType, IndexType, InitCapacity> > {
 public:
-    typedef FixedLockedRingQueue<T, std::mutex, uint64_t, 4096> queue_type;
-    typedef T                                                   item_type;
+    typedef FixedLockedRingQueue<T, MutexType, IndexType, InitCapacity> queue_type;
+    typedef T item_type;
 
 private:
     queue_type queue_;
@@ -352,28 +360,30 @@ void consumer_thread_proc(unsigned index, unsigned consumers, QueueType * queue)
     }
 }
 
-template <typename QueueType, typename MessageType, size_t InitSize>
-void run_test_threads(unsigned producers, unsigned consumers)
+template <typename QueueType, typename MessageType>
+void run_test_threads(unsigned producers, unsigned consumers, size_t initCapacity)
 {
     typedef QueueType queue_type;
     typedef MessageType message_type;
 
     queue_type queue;
-    queue.resize(InitSize);
+    queue.resize(initCapacity);
 
     std::thread  ** producer_threads = new std::thread *[producers];
     std::thread  ** consumer_threads = new std::thread *[consumers];
 
     if (producer_threads) {
         for (unsigned i = 0; i < producers; ++i) {
-            std::thread * thread = new std::thread(producer_thread_proc<queue_type, message_type>, i, producers, &queue);
+            std::thread * thread = new std::thread(producer_thread_proc<queue_type, message_type>,
+                i, producers, &queue);
             producer_threads[i] = thread;
         }
     }
 
     if (consumer_threads) {
         for (unsigned i = 0; i < consumers; ++i) {
-            std::thread * thread = new std::thread(consumer_thread_proc<queue_type, message_type>, i, consumers, &queue);
+            std::thread * thread = new std::thread(consumer_thread_proc<queue_type, message_type>,
+                i, consumers, &queue);
             consumer_threads[i] = thread;
         }
     }
@@ -407,8 +417,8 @@ void run_test_threads(unsigned producers, unsigned consumers)
     }
 }
 
-template <typename QueueType, typename MessageType, size_t InitSize>
-void run_test(unsigned producers, unsigned consumers)
+template <typename QueueType, typename MessageType>
+void run_test(unsigned producers, unsigned consumers, size_t initCapacity)
 {
     typedef QueueType queue_type;
     typedef MessageType message_type;
@@ -419,7 +429,7 @@ void run_test(unsigned producers, unsigned consumers)
     using namespace std::chrono;
     time_point<high_resolution_clock> startime = high_resolution_clock::now();
 
-    run_test_threads<queue_type, message_type, InitSize>(producers, consumers);
+    run_test_threads<queue_type, message_type>(producers, consumers, initCapacity);
 
     time_point<high_resolution_clock> endtime = high_resolution_clock::now();
     duration<double> elapsed_time = duration_cast< duration<double> >(endtime - startime);
@@ -440,18 +450,19 @@ int main(int argc, char * argv[])
     printf("Messages  = %u\n", kMaxMessageCount);
     printf("Producers = %u\n", producers);
     printf("Consumers = %u\n", consumers);
-#if defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) || defined(_M_IA64) || defined(__amd64__) || defined(__x86_64__)
+#if defined(_WIN64) || defined(_M_X64) || defined(_M_AMD64) || defined(_M_IA64) \
+ || defined(__amd64__) || defined(__x86_64__)
     printf("x86_64    = true\n");
 #else
     printf("x86_64    = false\n");
 #endif
     printf("\n");
 
-    run_test<StdQueueWrapper<Message *>, Message, 4096>(producers, consumers);
-    run_test<StdDequeueWrapper<Message *>, Message, 4096>(producers, consumers);
+    run_test<StdQueueWrapper<Message *, std::mutex>, Message>(producers, consumers, 4096);
+    run_test<StdDequeueWrapper<Message *, std::mutex>, Message>(producers, consumers, 4096);
 
-    run_test<LockedRingQueueWrapper<Message *>, Message, 4096>(producers, consumers);
-    run_test<FixedLockedRingQueueWrapper<Message *>, Message, 4096>(producers, consumers);
+    run_test<LockedRingQueueWrapper<Message *, std::mutex, uint64_t>, Message>(producers, consumers, 4096);
+    run_test<FixedLockedRingQueueWrapper<Message *, std::mutex, uint64_t, 4096>, Message>(producers, consumers, 4096);
 
     printf("\n");
     ::system("pause");

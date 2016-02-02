@@ -117,9 +117,9 @@ public:
 
 template <typename T, typename MutexType = std::mutex,
           typename IndexType = uint64_t,
-          size_t initCapacity = kQueueDefaultCapacity>
+          size_t InitCapacity = kQueueDefaultCapacity>
 class FixedLockedRingQueue :
-    public LockedRingQueueAbstract<FixedLockedRingQueue<T, MutexType, IndexType, initCapacity>, T> {
+    public LockedRingQueueAbstract<FixedLockedRingQueue<T, MutexType, IndexType, InitCapacity>, T> {
 public:
     typedef T               item_type;
     typedef T *             value_type;
@@ -129,7 +129,7 @@ public:
 
     static const index_type kInitCursor = (index_type)(-1);
     static const index_type kDefaultCapacity = (index_type)compile_time::round_to_pow2<kQueueDefaultCapacity>::value;
-    static const index_type kCapacity = (index_type)compile_time::round_to_pow2<initCapacity>::value;
+    static const index_type kCapacity = (index_type)compile_time::round_to_pow2<InitCapacity>::value;
     static const index_type kIndexMask = (index_type)(kCapacity - 1);
     static const size_type  kAlignment = compile_time::round_to_pow2<kCacheLineSize>::value;
 
