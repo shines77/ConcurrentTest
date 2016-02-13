@@ -13,6 +13,7 @@
 #include <type_traits>
 
 #include <assert.h>
+#include <immintrin.h>
 
 #include <FastQueue/queue/LockedRingQueue.h>
 
@@ -22,6 +23,12 @@ using namespace FastQueue;
 #define MAX_MESSAGE_COUNT   (800 * 10000)
 #else
 #define MAX_MESSAGE_COUNT   (50 * 10000)
+#endif
+
+#if defined(NDEBUG)
+#define MAX_ITERATIONS      (200 * 100000)
+#else
+#define MAX_ITERATIONS      (10 * 100000)
 #endif
 
 typedef double  jmc_timestamp_t;
@@ -369,8 +376,8 @@ void run_test_threads(unsigned producers, unsigned consumers, size_t initCapacit
     queue_type queue;
     queue.resize(initCapacity);
 
-    std::thread  ** producer_threads = new std::thread *[producers];
-    std::thread  ** consumer_threads = new std::thread *[consumers];
+    std::thread ** producer_threads = new std::thread *[producers];
+    std::thread ** consumer_threads = new std::thread *[consumers];
 
     if (producer_threads) {
         for (unsigned i = 0; i < producers; ++i) {
@@ -439,6 +446,212 @@ void run_test(unsigned producers, unsigned consumers, size_t initCapacity)
     printf("\n");
 }
 
+std::atomic<long> g_counter = 0;
+volatile long g_cntval = 0;
+
+enum {
+    test_suit_atomic_fetch_add,
+    test_suit_x86_lock_xadd,
+    test_suit_x86_xchg,
+    test_suit_x86_xchg_cnt_error,
+    test_suit_x86_HLE_xchg,
+    test_suit_x86_lock_cmp_xchg,
+    test_suit_x86_lock_cmp_xchg_cnt_error,
+};
+
+const char * getTestSuiteName(size_t test_suite)
+{
+    switch (test_suite) {
+        case test_suit_atomic_fetch_add:
+            return "test_suit_atomic_fetch_add";
+        case test_suit_x86_lock_xadd:
+            return "test_suit_x86_lock_xadd";
+        case test_suit_x86_xchg:
+            return "test_suit_x86_xchg";
+        case test_suit_x86_xchg_cnt_error:
+            return "test_suit_x86_xchg_cnt_error";
+        case test_suit_x86_HLE_xchg:
+            return "test_suit_x86_HLE_xchg";
+        case test_suit_x86_lock_cmp_xchg:
+            return "test_suit_x86_lock_cmp_xchg";
+        case test_suit_x86_lock_cmp_xchg_cnt_error:
+            return "test_suit_x86_lock_cmp_xchg_cnt_error";
+        default:
+            return "unknown_test_suite_name";
+    }
+}
+
+template <size_t test_suite>
+void atomic_test_thread_proc(unsigned thread_idx, unsigned nthread, unsigned iterations) { }
+
+template <>
+void atomic_test_thread_proc<test_suit_atomic_fetch_add>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+{
+    for (unsigned i = 0; i < iterations; ++i) {
+        g_counter.fetch_add(1, std::memory_order_acq_rel);
+    }
+}
+
+template <>
+void atomic_test_thread_proc<test_suit_x86_lock_xadd>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+{
+    for (unsigned i = 0; i < iterations; ++i) {
+        ::_InterlockedExchangeAdd(&g_cntval, 1);
+    }
+}
+
+template <>
+void atomic_test_thread_proc<test_suit_x86_xchg>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+{
+    for (unsigned i = 0; i < iterations; ++i) {
+        long old_value, new_value, now_value;
+        do {
+            _ReadWriteBarrier();
+            old_value = g_cntval;
+            _ReadWriteBarrier();
+            new_value = old_value + 1;
+            now_value = ::_InterlockedExchange(&g_cntval, new_value);
+        } while (now_value != old_value);
+    }
+}
+
+template <>
+void atomic_test_thread_proc<test_suit_x86_xchg_cnt_error>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+{
+    unsigned s_errors = 0, s_collects = 0;
+    for (unsigned i = 0; i < iterations; ++i) {
+        long old_value, new_value, now_value;
+        do {
+            _ReadWriteBarrier();
+            old_value = g_cntval;
+            _ReadWriteBarrier();
+            new_value = old_value + 1;
+            now_value = ::_InterlockedExchange(&g_cntval, new_value);
+            if (now_value != old_value) {
+                s_errors++;
+            }
+            else {
+                s_collects++;
+            }
+        } while (now_value != old_value);
+    }
+
+    printf("thread_idx = %u, s_collects = %u, s_errors = %u\n", thread_idx, s_collects, s_errors);
+}
+
+template <>
+void atomic_test_thread_proc<test_suit_x86_HLE_xchg>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+{
+    for (unsigned i = 0; i < iterations; ++i) {
+        long old_value, new_value, now_value;
+        do {
+            _ReadWriteBarrier();
+            old_value = g_cntval;
+            _ReadWriteBarrier();
+            new_value = old_value + 1;
+            now_value = ::_InterlockedExchange_HLEAcquire(&g_cntval, new_value);
+            ::_InterlockedExchange_HLERelease(&g_cntval, new_value);
+        } while (now_value != old_value);
+    }
+}
+
+template <>
+void atomic_test_thread_proc<test_suit_x86_lock_cmp_xchg>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+{
+    for (unsigned i = 0; i < iterations; ++i) {
+        long old_value, new_value, now_value;
+        do {
+            _ReadWriteBarrier();
+            old_value = g_cntval;
+            _ReadWriteBarrier();
+            new_value = old_value + 1;
+            now_value = ::_InterlockedCompareExchange(&g_cntval, new_value, old_value);
+        } while (now_value != old_value);
+    }
+}
+
+template <>
+void atomic_test_thread_proc<test_suit_x86_lock_cmp_xchg_cnt_error>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+{
+    unsigned s_errors = 0, s_collects = 0;
+    for (unsigned i = 0; i < iterations; ++i) {
+        long old_value, new_value, now_value;
+        do {
+            _ReadWriteBarrier();
+            old_value = g_cntval;
+            _ReadWriteBarrier();
+            new_value = old_value + 1;
+            now_value = ::_InterlockedCompareExchange(&g_cntval, new_value, old_value);
+            if (now_value != old_value) {
+                s_errors++;
+            }
+            else {
+                s_collects++;
+            }
+        } while (now_value != old_value);
+    }
+
+    printf("thread_idx = %u, s_collects = %u, s_errors = %u\n", thread_idx, s_collects, s_errors);
+}
+
+template <size_t test_suite>
+void run_atomic_test_threads(unsigned nthread, unsigned total_iterations)
+{
+    std::thread ** atomic_test_threads = new std::thread *[nthread];
+
+    unsigned iterations = total_iterations / nthread;
+    if (atomic_test_threads) {
+        for (unsigned i = 0; i < nthread; ++i) {
+            std::thread * thread = new std::thread(atomic_test_thread_proc<test_suite>,
+                i, nthread, iterations);
+            atomic_test_threads[i] = thread;
+        }
+    }
+
+    if (atomic_test_threads) {
+        for (unsigned i = 0; i < nthread; ++i) {
+            atomic_test_threads[i]->join();
+        }
+    }
+
+    if (atomic_test_threads) {
+        for (unsigned i = 0; i < nthread; ++i) {
+            if (atomic_test_threads[i])
+                delete atomic_test_threads[i];
+        }
+        delete[] atomic_test_threads;
+    }
+}
+
+template <size_t test_suite>
+void run_atomic_test(unsigned nthread, unsigned total_iterations)
+{
+    g_counter = 0;
+    g_cntval = 0;
+
+    printf("Test for: run_atomic_test<%s>(%u)\n", getTestSuiteName(test_suite), nthread);
+    printf("\n");
+
+    using namespace std::chrono;
+    time_point<high_resolution_clock> startime = high_resolution_clock::now();
+
+    run_atomic_test_threads<test_suite>(nthread, total_iterations);
+
+    time_point<high_resolution_clock> endtime = high_resolution_clock::now();
+    duration<double> elapsed_time = duration_cast< duration<double> >(endtime - startime);
+
+    printf("nthread = %d\n", nthread);
+    printf("iterations = %d\n", total_iterations / nthread);
+    printf("\n");
+    printf("g_counter = %d\n", g_counter.load(std::memory_order_seq_cst));
+    printf("g_cntval = %d\n", g_cntval);
+
+    printf("\n");
+    printf("elapsed time: %0.3f second(s)\n", elapsed_time.count());
+    printf("\n");
+    printf("--------------------------------------------------------------\n");
+}
+
 int main(int argc, char * argv[])
 {
     unsigned producers, consumers;
@@ -458,11 +671,23 @@ int main(int argc, char * argv[])
 #endif
     printf("\n");
 
+#if 0
     run_test<StdQueueWrapper<Message *, std::mutex>, Message>(producers, consumers, 4096);
     run_test<StdDequeueWrapper<Message *, std::mutex>, Message>(producers, consumers, 4096);
 
     run_test<LockedRingQueueWrapper<Message *, std::mutex, uint64_t>, Message>(producers, consumers, 4096);
     run_test<FixedLockedRingQueueWrapper<Message *, std::mutex, uint64_t, 4096>, Message>(producers, consumers, 4096);
+#endif
+
+    for (unsigned nthread = 4; nthread <= 16; nthread *= 2) {
+        run_atomic_test<test_suit_atomic_fetch_add>(nthread, MAX_ITERATIONS);
+        run_atomic_test<test_suit_x86_lock_xadd>(nthread, MAX_ITERATIONS);
+        run_atomic_test<test_suit_x86_xchg>(nthread, MAX_ITERATIONS);
+        run_atomic_test<test_suit_x86_xchg_cnt_error>(nthread, MAX_ITERATIONS);
+        run_atomic_test<test_suit_x86_HLE_xchg>(nthread, MAX_ITERATIONS);
+        run_atomic_test<test_suit_x86_lock_cmp_xchg>(nthread, MAX_ITERATIONS);
+        run_atomic_test<test_suit_x86_lock_cmp_xchg_cnt_error>(nthread, MAX_ITERATIONS);
+    }
 
     printf("\n");
     ::system("pause");

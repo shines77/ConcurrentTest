@@ -161,10 +161,10 @@ public:
 private:
     inline void init() {
         assert(run_time::is_pow2(kAlignment));
-        static const size_type kAligntMask = ~(kAlignment - 1);
+        static const size_type kAlignMask = ~(kAlignment - 1);
         static const size_type kAlignPadding = kAlignment - 1;
         assert(kAlignment != 0);
-        assert(kAligntMask != 0);
+        assert(kAlignMask != 0);
         assert((kAlignPadding != (size_type)(-1)) && ((unsigned)kAlignPadding < (unsigned)kAlignment));
         // entries_ addr must align to kAlignment byte.
         assert(run_time::is_pow2(kCapacity));
@@ -173,7 +173,7 @@ private:
         if (newEntries) {
             allocEntries_ = newEntries;
             allocSize_ = allocSize;
-            entries_ = reinterpret_cast<value_type>(reinterpret_cast<uintptr_t>(newEntries + kAlignPadding) & kAligntMask);
+            entries_ = reinterpret_cast<value_type>(reinterpret_cast<uintptr_t>(reinterpret_cast<char *>(newEntries) + kAlignPadding) & kAlignMask);
         }
     }
 
