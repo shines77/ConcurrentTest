@@ -671,7 +671,7 @@ int main(int argc, char * argv[])
 #endif
     printf("\n");
 
-#if 0
+#if 1
     run_test<StdQueueWrapper<Message *, std::mutex>, Message>(producers, consumers, 4096);
     run_test<StdDequeueWrapper<Message *, std::mutex>, Message>(producers, consumers, 4096);
 
