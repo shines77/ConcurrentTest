@@ -109,7 +109,11 @@ private:
 
 public:
   Mutex() {
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT >= 0x0403)
+    ::InitializeCriticalSectionAndSpinCount(&mutex_, 1);
+#else
     ::InitializeCriticalSection(&mutex_);
+#endif
   }
 
   ~Mutex() {
@@ -121,7 +125,11 @@ public:
   }
 
   bool try_lock() {
+#if defined(_WIN32_WINNT) && (_WIN32_WINNT > 0x0400)
     return (::TryEnterCriticalSection(&mutex_) != 0);
+#else
+    return false;
+#endif
   }
 
   void unlock() {
@@ -147,7 +155,7 @@ public:
   }
 
   bool try_lock() {
-    return pthread_mutex_trylock(&mutex_);
+    return (pthread_mutex_trylock(&mutex_) != 0);
   }
 
   void unlock() {
@@ -733,8 +741,8 @@ void run_atomic_test(unsigned nthread, unsigned total_iterations)
 int main(int argc, char * argv[])
 {
     unsigned producers, consumers;
-    producers = 1;
-    consumers = 1;
+    producers = 2;
+    consumers = 2;
 
     printf("ConcurrentTest.\n");
     printf("\n");
