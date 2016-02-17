@@ -656,8 +656,8 @@ void run_atomic_test(unsigned nthread, unsigned total_iterations)
 int main(int argc, char * argv[])
 {
     unsigned producers, consumers;
-    producers = 2;
-    consumers = 2;
+    producers = 1;
+    consumers = 1;
 
     printf("ConcurrentTest.\n");
     printf("\n");
