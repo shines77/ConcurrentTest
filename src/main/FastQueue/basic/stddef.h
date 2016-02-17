@@ -17,8 +17,8 @@
 #define FASTQUEUE_API        extern "C" static
 #endif
 
-#ifndef TI_CACHE_LINE_SIZE
-#define TI_CACHE_LINE_SIZE      64
+#ifndef TI_CACHELINE_SIZE
+#define TI_CACHELINE_SIZE    64
 #endif
 
 #endif  /* FASTQUEUE_BASIC_STDDEF_H */

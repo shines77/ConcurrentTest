@@ -12,6 +12,13 @@
 #include <deque>
 #include <type_traits>
 
+#if defined(_WIN32) || defined(_WIN64) || defined(_WINDOWS) || defined(__MINGW__) || defined(__MINGW32__)
+#include <windows.h>
+#include <minwinbase.h>
+#include <synchapi.h>
+#else
+#include <pthread.h>
+#endif
 #include <assert.h>
 #include <immintrin.h>
 
@@ -93,6 +100,62 @@ public:
     }
 };
 
+#if defined(_WIN32) || defined(_WIN64) || defined(_WINDOWS) || defined(__MINGW__) || defined(__MINGW32__)
+class Mutex {
+private:
+  CRITICAL_SECTION  mutex_;
+
+public:
+  Mutex() {
+    ::InitializeCriticalSection(&mutex_);
+  }
+
+  ~Mutex() {
+    ::DeleteCriticalSection(&mutex_);
+  }
+
+  void lock() {
+    ::EnterCriticalSection(&mutex_);
+  }
+
+  bool try_lock() {
+    return (::TryEnterCriticalSection(&mutex_) != 0);
+  }
+
+  void unlock() {
+    ::LeaveCriticalSection(&mutex_);
+  }
+};
+#elif defined(__linux__) || defined(__CYGWIN__) || defined(PTHREAD_H) || defined(_PTHREAD_H)
+class Mutex {
+private:
+  pthread_mutex_t  mutex_;
+
+public:
+  Mutex() {
+    pthread_mutex_init(&mutex_);
+  }
+
+  ~Mutex() {
+    pthread_mutex_destroy(&mutex_);
+  }
+
+  void lock() {
+    pthread_mutex_lock(&mutex_);
+  }
+
+  bool try_lock() {
+    return pthread_mutex_trylock(&mutex_);
+  }
+
+  void unlock() {
+    pthread_mutex_unlock(&mutex_);
+  }
+};
+#else // Other OS
+#error WTF
+#endif // _WIN32
+
 } // namespace local
 
 template <typename T>
@@ -137,6 +200,12 @@ public:
     void push(U && item) {
         local::scoped_lock<mutex_type> lock(mutex_);
         queue_.push(std::forward<U>(item));
+    }
+
+    item_type & front() {
+        local::scoped_lock<mutex_type> lock(mutex_);
+        item_type & item = queue_.front();
+        return item;
     }
 
     item_type & back() {
@@ -199,7 +268,13 @@ public:
     template <typename U>
     void push(U && item) {
         local::scoped_lock<mutex_type> lock(mutex_);
-        queue_.push_front(std::forward<U>(item));
+        queue_.push_back(std::forward<U>(item));
+    }
+
+    item_type & front() {
+        local::scoped_lock<mutex_type> lock(mutex_);
+        item_type & item = queue_.front();
+        return item;
     }
 
     item_type & back() {
@@ -210,7 +285,7 @@ public:
 
     void pop() {
         local::scoped_lock<mutex_type> lock(mutex_);
-        queue_.pop_back();
+        queue_.pop_front();
     }
 
     int pop(item_type & item) {
@@ -218,7 +293,7 @@ public:
         if (!queue_.empty()) {
             item_type & ret = queue_.back();
             item = std::move(ret);
-            queue_.pop_back();
+            queue_.pop_front();
             return true;
         }
         else {
@@ -673,11 +748,23 @@ int main(int argc, char * argv[])
     printf("\n");
 
 #if 1
+    printf("-------------------------------------------------------------------------\n");
+
+    run_test<StdQueueWrapper<Message *, local::Mutex>, Message>(producers, consumers, 4096);
+    run_test<StdDequeueWrapper<Message *, local::Mutex>, Message>(producers, consumers, 4096);
+
+    run_test<LockedRingQueueWrapper<Message *, local::Mutex, uint64_t>, Message>(producers, consumers, 4096);
+    run_test<FixedLockedRingQueueWrapper<Message *, local::Mutex, uint64_t, 4096>, Message>(producers, consumers, 4096);
+
+    printf("-------------------------------------------------------------------------\n");
+
     run_test<StdQueueWrapper<Message *, std::mutex>, Message>(producers, consumers, 4096);
     run_test<StdDequeueWrapper<Message *, std::mutex>, Message>(producers, consumers, 4096);
 
     run_test<LockedRingQueueWrapper<Message *, std::mutex, uint64_t>, Message>(producers, consumers, 4096);
     run_test<FixedLockedRingQueueWrapper<Message *, std::mutex, uint64_t, 4096>, Message>(producers, consumers, 4096);
+
+    printf("-------------------------------------------------------------------------\n");
 #endif
 
 #if 0
