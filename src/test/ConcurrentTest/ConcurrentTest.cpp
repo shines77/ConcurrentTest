@@ -442,7 +442,8 @@ void run_test(unsigned producers, unsigned consumers, size_t initCapacity)
     duration<double> elapsed_time = duration_cast< duration<double> >(endtime - startime);
 
     //printf("\n");
-    printf("elapsed time: %0.3f second(s)\n", elapsed_time.count());
+    printf("Elapsed time: %0.3f second(s)\n", elapsed_time.count());
+    printf("Throughput:   %0.1f op/sec\n", (double)(kMaxMessageCount * 1) / elapsed_time.count());
     printf("\n");
 }
 
@@ -671,7 +672,7 @@ int main(int argc, char * argv[])
 #endif
     printf("\n");
 
-#if 0
+#if 1
     run_test<StdQueueWrapper<Message *, std::mutex>, Message>(producers, consumers, 4096);
     run_test<StdDequeueWrapper<Message *, std::mutex>, Message>(producers, consumers, 4096);
 
@@ -679,6 +680,7 @@ int main(int argc, char * argv[])
     run_test<FixedLockedRingQueueWrapper<Message *, std::mutex, uint64_t, 4096>, Message>(producers, consumers, 4096);
 #endif
 
+#if 0
     for (unsigned nthread = 4; nthread <= 16; nthread *= 2) {
         run_atomic_test<test_suit_atomic_fetch_add>(nthread, MAX_ITERATIONS);
         run_atomic_test<test_suit_x86_lock_xadd>(nthread, MAX_ITERATIONS);
@@ -688,6 +690,7 @@ int main(int argc, char * argv[])
         run_atomic_test<test_suit_x86_lock_cmp_xchg>(nthread, MAX_ITERATIONS);
         run_atomic_test<test_suit_x86_lock_cmp_xchg_cnt_error>(nthread, MAX_ITERATIONS);
     }
+#endif
 
     printf("\n");
     ::system("pause");
