@@ -12,10 +12,11 @@
 #include <deque>
 #include <type_traits>
 
-#if defined(_WIN32) || defined(_WIN64) || defined(_WINDOWS) || defined(__MINGW__) || defined(__MINGW32__)
+#if defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64) \
+ || defined(_WINDOWS) || defined(__MINGW__) || defined(__MINGW32__)
 #include <windows.h>
-#include <minwinbase.h>
-#include <synchapi.h>
+//#include <minwinbase.h>
+//#include <synchapi.h>
 #else
 #include <pthread.h>
 #endif
@@ -100,7 +101,8 @@ public:
     }
 };
 
-#if defined(_WIN32) || defined(_WIN64) || defined(_WINDOWS) || defined(__MINGW__) || defined(__MINGW32__)
+#if defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64) \
+ || defined(_WINDOWS) || defined(__MINGW__) || defined(__MINGW32__)
 class Mutex {
 private:
   CRITICAL_SECTION  mutex_;
