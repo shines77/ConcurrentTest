@@ -19,6 +19,8 @@ struct Message {
     Message(int _type) : id(0), type(_type), tag(0), length(0), data(nullptr) {
     }
 
+    virtual ~Message() {}
+
     int getId() const {
         return id;
     }

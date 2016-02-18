@@ -5,11 +5,19 @@
 #ifndef CEPH_ARRAY_MESSAGEFACTORY_H
 #define CEPH_ARRAY_MESSAGEFACTORY_H
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+
 #include <vector>
 #include <functional>
 #include <memory>
+#include <iostream>     // For std::cout
+#include <algorithm>    // For std::max
 
 #include "Message.h"
+
+#include "FastQueue/basic/stddef.h"
 
 class ArrayMessageFactory
 {
@@ -21,9 +29,8 @@ public:
         {
             ArrayMessageFactory & factory = ArrayMessageFactory::get();
             factory.reserve(key);
-            //std::vector<FuncPtr>::iterator it = factory.vec_.begin();
-            //factory.vec_.emplace(&it[key], &register_t<T>::create);
-            factory.vec_[key] = &register_t<T>::create;
+            if (factory.array_)
+                factory.array_[key] = &register_t<T>::create;
         }
 
         template <typename... Args>
@@ -31,17 +38,22 @@ public:
         {
             ArrayMessageFactory & factory = ArrayMessageFactory::get();
             factory.reserve(key);
-            //factory.vec_.emplace(key, [&] { return new T(std::forward<Args>(args...)); });
-            factory.vec_[key] = &register_t<T>::create<Args...>;
+            if (factory.array_)
+                factory.array_[key] = &register_t<T>::create<Args...>;
         }
 
-        inline static Message * create() { return new T(); }
+        static inline Message * create() {
+            return new T();
+        }
 
         //template <typename U>
         //inline static Message * create() { return new T(U); }
 
         template <typename... Args>
-        inline static Message * create(Args... args) { return new T(std::forward<Args...>(args...)); }
+        static inline Message * create(Args... args)
+        {
+            return new T(std::forward<Args...>(args...));
+        }
 
         //template <typename... Args>
         //inline static Message * create<void, Args...>() { return new T(); }
@@ -51,16 +63,12 @@ public:
     {
         //assert(key < max_capacity_);
         assert(max_key_ < max_capacity_);
-        //if (key > max_key_)
-        //    return nullptr;
-        //std::vector<FuncPtr>::const_iterator it = vec_[key];
-        //if (key < max_capacity_) {
         if (key <= max_key_) {
-          //FuncPtr createFunc = vec_[key];
-          std::vector<FuncPtr>::const_iterator it = vec_.cbegin();
-          FuncPtr createFunc = *(it + key);
-          if (createFunc)
-            return createFunc();
+            assert(array_ != nullptr);
+            //FuncPtr createFunc = array_[key];
+            FuncPtr createFunc = *(array_ + key);
+            if (createFunc)
+                return createFunc();
         }
         return nullptr;
     }
@@ -78,7 +86,7 @@ public:
 
     typedef Message *(*FuncPtr)();
 
-    inline static ArrayMessageFactory & get()
+    static inline ArrayMessageFactory & get()
     {
         static ArrayMessageFactory instance;
         return instance;
@@ -88,10 +96,12 @@ public:
         if (capacity > max_capacity_) {
             FuncPtr * new_array = (FuncPtr *)std::malloc(sizeof(FuncPtr) * capacity);
             if (new_array) {
-                for (unsigned i = 0; i < max_capacity_; ++i) {
-                    new_array[i] = array_[i];
-                }
                 if (array_) {
+                    if (new_array != array_) {
+                        for (unsigned i = 0; i < max_capacity_; ++i) {
+                            new_array[i] = array_[i];
+                        }
+                    }
                     std::free(array_);
                 }
                 array_ = new_array;
@@ -102,51 +112,60 @@ public:
 
     void reserve(unsigned int key)
     {
-        if (key > max_key_)
+        if (key > max_key_) {
             max_key_ = key;
-        if (key >= max_capacity_) {
-            unsigned new_capacity = max_capacity_;
-            new_capacity *= 2;
-            if (key >= new_capacity)
-                new_capacity *= 2;
-            this->_reserve(new_capacity);
-        }
-    }
-
-    void force_resize(unsigned capacity, bool clear = true) {
-        if (capacity > max_capacity_) {
-            if (array_) {
-                std::free(array_);
-                array_ = nullptr;
-            }
-            FuncPtr * new_array = (FuncPtr *)std::malloc(sizeof(FuncPtr) * capacity);
-            if (new_array) {
-                if (clear)
-                    ::memset(new_array, 0, sizeof(FuncPtr) * capacity);
-                array_ = new_array;
-                max_capacity_ = capacity;
+            if (key >= max_capacity_) {
+                unsigned new_capacity = std::max<unsigned>(max_capacity_ * 2, 1);
+                if (key >= new_capacity)
+                    new_capacity *= 2;
+                this->_reserve(new_capacity);
             }
         }
     }
 
     void resize(unsigned capacity, bool clear = true) {
         if (capacity > max_capacity_) {
-            FuncPtr * new_array = (FuncPtr *)std::realloc(array_, sizeof(FuncPtr) * capacity);
+            FuncPtr * new_array;
+            if (array_)
+                new_array = (FuncPtr *)std::realloc(array_, sizeof(FuncPtr) * capacity);
+            else
+                new_array = (FuncPtr *)std::malloc(sizeof(FuncPtr) * capacity);
             if (new_array) {
                 if (clear)
                     ::memset(new_array, 0, sizeof(FuncPtr) * capacity);
                 array_ = new_array;
                 max_capacity_ = capacity;
             }
+            else {
+                array_ = nullptr;
+                max_capacity_ = 0;
+            }
+        }
+    }
+
+protected:
+    void force_resize(unsigned capacity, bool clear = true) {
+        if (array_) {
+            std::free(array_);
+            array_ = nullptr;
+        }
+        FuncPtr * new_array = (FuncPtr *)std::malloc(sizeof(FuncPtr) * capacity);
+        if (new_array) {
+            if (clear)
+                ::memset(new_array, 0, sizeof(FuncPtr) * capacity);
+            array_ = new_array;
+            max_capacity_ = capacity;
         }
     }
 
 private:
-    ArrayMessageFactory() : max_key_(0), max_capacity_(128), array_(nullptr) {
-        this->force_resize(max_capacity_, true);
+    ArrayMessageFactory() : max_key_(0), max_capacity_(0), array_(nullptr) {
+        this->force_resize(128, true);
+#if 0
         for (unsigned i = 0; i < max_capacity_; ++i) {
             array_[i] = nullptr;
         }
+#endif
     };
     ArrayMessageFactory(const ArrayMessageFactory &) = delete;
     ArrayMessageFactory(ArrayMessageFactory &&) = delete;
@@ -156,7 +175,7 @@ private:
     unsigned max_capacity_;
 };
 
-#define ARRAY_REGISTER_MESSAGE_VNAME(T)        vector_reg_msg_##T##_
+#define ARRAY_REGISTER_MESSAGE_VNAME(T)        array_reg_msg_##T##_
 #define ARRAY_REGISTER_MESSAGE(T, key, ...)    static ArrayMessageFactory::register_t<T> ARRAY_REGISTER_MESSAGE_VNAME(T)(key, ##__VA_ARGS__);
 
 #define ARRAY_REGISTER_MESSAGE_01(T, key, arg_type, ...)   \

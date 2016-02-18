@@ -31,7 +31,7 @@
 #include "ArrayMessageFactory.h"
 
 #if defined(NDEBUG)
-#define MAX_ITERATIONS      (5 * 1000 * 10000)
+#define MAX_ITERATIONS      (8 * 1000 * 10000)
 #else
 #define MAX_ITERATIONS      (20 * 10000)
 #endif
@@ -306,7 +306,7 @@ Message * create_a_message<test_id_calc_sum_only>(unsigned int msg_id) {
 }
 
 template <>
-//inline
+inline
 Message * create_a_message<test_id_map_message_factory>(unsigned int msg_id) {
     unsigned int type = msg_id;
     Message * m = MapMessageFactory::get().createMessage(type);
@@ -317,7 +317,7 @@ Message * create_a_message<test_id_map_message_factory>(unsigned int msg_id) {
 }
 
 template <>
-//inline
+inline
 Message * create_a_message<test_id_unordered_map_message_factory>(unsigned int msg_id) {
     unsigned int type = msg_id;
     Message * m = UnorderedMapMessageFactory::get().createMessage(type);
@@ -328,8 +328,19 @@ Message * create_a_message<test_id_unordered_map_message_factory>(unsigned int m
 }
 
 template <>
-//inline
+inline
 Message * create_a_message<test_id_vector_message_factory>(unsigned int msg_id) {
+    unsigned int type = msg_id;
+    Message * m = VectorMessageFactory::get().createMessage(type);
+    if (m == nullptr) {
+        // Unknown message id
+    }
+    return m;
+}
+
+template <>
+inline
+Message * create_a_message<test_id_array_message_factory>(unsigned int msg_id) {
     unsigned int type = msg_id;
     Message * m = VectorMessageFactory::get().createMessage(type);
     if (m == nullptr) {
@@ -362,6 +373,7 @@ void switch_case_test_thread_proc(unsigned thread_idx, unsigned nthreads, unsign
             else {
 #if 1
                 sum += message->getType();
+                delete message;
 #else
                 unsigned int msg_type = message->getType();
                 if (msg_type >= CEPH_MSG_ID_VALID_FIRST && msg_type <= CEPH_MSG_ID_VALID_LAST) {
@@ -486,6 +498,7 @@ int main(int argc, char * argv[])
     //run_switch_case_test<test_id_calc_sum_only>(nthreads, iterations);
     run_switch_case_test<test_id_ceph_switch_case>(nthreads, iterations);
     run_switch_case_test<test_id_vector_message_factory>(nthreads, iterations);
+    run_switch_case_test<test_id_array_message_factory>(nthreads, iterations);
     run_switch_case_test<test_id_map_message_factory>(nthreads, iterations);
     run_switch_case_test<test_id_unordered_map_message_factory>(nthreads, iterations);
     
@@ -497,6 +510,7 @@ int main(int argc, char * argv[])
     //run_switch_case_test<test_id_calc_sum_only>(nthreads, iterations);
     run_switch_case_test<test_id_ceph_switch_case>(nthreads, iterations);
     run_switch_case_test<test_id_vector_message_factory>(nthreads, iterations);
+    run_switch_case_test<test_id_array_message_factory>(nthreads, iterations);
     run_switch_case_test<test_id_map_message_factory>(nthreads, iterations);
     run_switch_case_test<test_id_unordered_map_message_factory>(nthreads, iterations);
 #endif

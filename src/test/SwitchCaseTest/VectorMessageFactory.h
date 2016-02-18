@@ -8,8 +8,12 @@
 #include <vector>
 #include <functional>
 #include <memory>
+#include <iostream>     // For std::cout
+#include <algorithm>    // For std::max
 
 #include "Message.h"
+
+#include "FastQueue/basic/stddef.h"
 
 class VectorMessageFactory
 {
@@ -35,19 +39,24 @@ public:
             factory.vec_[key] = &register_t<T>::create<Args...>;
         }
 
-        inline static Message * create() { return new T(); }
+        static inline Message * create() {
+            return new T();
+        }
 
         //template <typename U>
         //inline static Message * create() { return new T(U); }
 
         template <typename... Args>
-        inline static Message * create(Args... args) { return new T(std::forward<Args...>(args...)); }
+        static inline Message * create(Args... args)
+        {
+            return new T(std::forward<Args...>(args...));
+        }
 
         //template <typename... Args>
         //inline static Message * create<void, Args...>() { return new T(); }
     };
 
-    inline Message * createMessage(unsigned int key)
+    __forceinline Message * createMessage(unsigned int key)
     {
         //assert(key < max_capacity_);
         assert(max_key_ < max_capacity_);
@@ -78,7 +87,7 @@ public:
 
     typedef Message *(*FuncPtr)();
 
-    inline static VectorMessageFactory & get()
+    static __forceinline VectorMessageFactory & get()
     {
         static VectorMessageFactory instance;
         return instance;
@@ -89,8 +98,7 @@ public:
         if (key > max_key_)
             max_key_ = key;
         if (key >= max_capacity_) {
-            unsigned new_capacity = max_capacity_;
-            new_capacity *= 2;
+            unsigned new_capacity = std::max<unsigned>(max_capacity_ * 2, 1);
             if (key >= new_capacity)
                 new_capacity *= 2;
             vec_.reserve(new_capacity);
