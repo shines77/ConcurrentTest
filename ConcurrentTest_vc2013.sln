@@ -3,18 +3,23 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "main", "main", "{361BDD6C-5040-43E4-95BE-54FFD7928BB2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{F1E15DC8-D1F7-42DF-9719-F92438C67510}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "unittest", "unittest", "{B3BFE5D6-375B-43C0-BA86-13C1FE99DC05}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libFastQueue", "projects\vc2013\main\FastQueue\libFastQueue.vcxproj", "{2F1A9C20-8B16-46B1-884D-F28B72E8B98D}"
+EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ConcurrentTest", "projects\vc2013\test\ConcurrentTest\ConcurrentTest.vcxproj", "{7C0C1846-F676-4CA1-8CB4-6654087D47D1}"
 	ProjectSection(ProjectDependencies) = postProject
 		{2F1A9C20-8B16-46B1-884D-F28B72E8B98D} = {2F1A9C20-8B16-46B1-884D-F28B72E8B98D}
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{F1E15DC8-D1F7-42DF-9719-F92438C67510}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "main", "main", "{361BDD6C-5040-43E4-95BE-54FFD7928BB2}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libFastQueue", "projects\vc2013\main\FastQueue\libFastQueue.vcxproj", "{2F1A9C20-8B16-46B1-884D-F28B72E8B98D}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "unittest", "unittest", "{B3BFE5D6-375B-43C0-BA86-13C1FE99DC05}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SwitchCaseTest", "projects\vc2013\test\SwitchCaseTest\SwitchCaseTest.vcxproj", "{04485224-3C8D-47BD-BE22-352B54605177}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2F1A9C20-8B16-46B1-884D-F28B72E8B98D} = {2F1A9C20-8B16-46B1-884D-F28B72E8B98D}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FastQueueTest", "projects\vc2013\unittest\FastQueueTest\FastQueueTest.vcxproj", "{DC140DA7-7012-4A31-90A4-50541871ACC9}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -29,14 +34,6 @@ Global
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Debug|Win32.ActiveCfg = Debug|Win32
-		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Debug|Win32.Build.0 = Debug|Win32
-		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Debug|x64.ActiveCfg = Debug|x64
-		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Debug|x64.Build.0 = Debug|x64
-		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Release|Win32.ActiveCfg = Release|Win32
-		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Release|Win32.Build.0 = Release|Win32
-		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Release|x64.ActiveCfg = Release|x64
-		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Release|x64.Build.0 = Release|x64
 		{2F1A9C20-8B16-46B1-884D-F28B72E8B98D}.Debug|Win32.ActiveCfg = Debug|Win32
 		{2F1A9C20-8B16-46B1-884D-F28B72E8B98D}.Debug|Win32.Build.0 = Debug|Win32
 		{2F1A9C20-8B16-46B1-884D-F28B72E8B98D}.Debug|x64.ActiveCfg = Debug|x64
@@ -45,6 +42,14 @@ Global
 		{2F1A9C20-8B16-46B1-884D-F28B72E8B98D}.Release|Win32.Build.0 = Release|Win32
 		{2F1A9C20-8B16-46B1-884D-F28B72E8B98D}.Release|x64.ActiveCfg = Release|x64
 		{2F1A9C20-8B16-46B1-884D-F28B72E8B98D}.Release|x64.Build.0 = Release|x64
+		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Debug|Win32.ActiveCfg = Debug|Win32
+		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Debug|Win32.Build.0 = Debug|Win32
+		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Debug|x64.ActiveCfg = Debug|x64
+		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Debug|x64.Build.0 = Debug|x64
+		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Release|Win32.ActiveCfg = Release|Win32
+		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Release|Win32.Build.0 = Release|Win32
+		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Release|x64.ActiveCfg = Release|x64
+		{7C0C1846-F676-4CA1-8CB4-6654087D47D1}.Release|x64.Build.0 = Release|x64
 		{DC140DA7-7012-4A31-90A4-50541871ACC9}.Debug|Win32.ActiveCfg = Debug|Win32
 		{DC140DA7-7012-4A31-90A4-50541871ACC9}.Debug|Win32.Build.0 = Debug|Win32
 		{DC140DA7-7012-4A31-90A4-50541871ACC9}.Debug|x64.ActiveCfg = Debug|x64
@@ -53,13 +58,22 @@ Global
 		{DC140DA7-7012-4A31-90A4-50541871ACC9}.Release|Win32.Build.0 = Release|Win32
 		{DC140DA7-7012-4A31-90A4-50541871ACC9}.Release|x64.ActiveCfg = Release|x64
 		{DC140DA7-7012-4A31-90A4-50541871ACC9}.Release|x64.Build.0 = Release|x64
+		{04485224-3C8D-47BD-BE22-352B54605177}.Debug|Win32.ActiveCfg = Debug|Win32
+		{04485224-3C8D-47BD-BE22-352B54605177}.Debug|Win32.Build.0 = Debug|Win32
+		{04485224-3C8D-47BD-BE22-352B54605177}.Debug|x64.ActiveCfg = Debug|x64
+		{04485224-3C8D-47BD-BE22-352B54605177}.Debug|x64.Build.0 = Debug|x64
+		{04485224-3C8D-47BD-BE22-352B54605177}.Release|Win32.ActiveCfg = Release|Win32
+		{04485224-3C8D-47BD-BE22-352B54605177}.Release|Win32.Build.0 = Release|Win32
+		{04485224-3C8D-47BD-BE22-352B54605177}.Release|x64.ActiveCfg = Release|x64
+		{04485224-3C8D-47BD-BE22-352B54605177}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{7C0C1846-F676-4CA1-8CB4-6654087D47D1} = {F1E15DC8-D1F7-42DF-9719-F92438C67510}
 		{2F1A9C20-8B16-46B1-884D-F28B72E8B98D} = {361BDD6C-5040-43E4-95BE-54FFD7928BB2}
+		{7C0C1846-F676-4CA1-8CB4-6654087D47D1} = {F1E15DC8-D1F7-42DF-9719-F92438C67510}
 		{DC140DA7-7012-4A31-90A4-50541871ACC9} = {B3BFE5D6-375B-43C0-BA86-13C1FE99DC05}
+		{04485224-3C8D-47BD-BE22-352B54605177} = {F1E15DC8-D1F7-42DF-9719-F92438C67510}
 	EndGlobalSection
 EndGlobal

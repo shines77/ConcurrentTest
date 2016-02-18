@@ -39,6 +39,21 @@ using namespace FastQueue;
 #define MAX_ITERATIONS      (10 * 100000)
 #endif
 
+#define CXX11_DEFAULT_METHOD_DECLEAR    1
+#define CXX11_DELETE_METHOD_DECLEAR     1
+
+#if defined(CXX11_DEFAULT_METHOD_DECLEAR) && (CXX11_DEFAULT_METHOD_DECLEAR != 0)
+#define JIMI_DEFAULT_METHOD     = default
+#else
+#define JIMI_DEFAULT_METHOD     {}
+#endif
+
+#if defined(CXX11_DELETE_METHOD_DECLEAR) && (CXX11_DELETE_METHOD_DECLEAR != 0)
+#define JIMI_DELETE_METHOD      = delete
+#else
+#define JIMI_DELETE_METHOD      {}
+#endif
+
 typedef double  jmc_timestamp_t;
 
 enum {
@@ -75,9 +90,6 @@ public:
     }
 };
 
-#define JIMI_DEFAULT_METHOD     default
-#define JIMI_DELETE_METHOD      delete
-
 namespace local {
 
 template <typename T, bool HasLocked = false>
@@ -86,8 +98,8 @@ private:
     typedef T mutex_type;
     mutex_type & mutex_;
 
-    scoped_lock(mutex_type const &) = JIMI_DELETE_METHOD;
-    scoped_lock & operator = (mutex_type const &) = JIMI_DELETE_METHOD;
+    scoped_lock(mutex_type const &) JIMI_DELETE_METHOD;
+    scoped_lock & operator = (mutex_type const &) JIMI_DELETE_METHOD;
 
 public:
     explicit scoped_lock(mutex_type & mutex) : mutex_(mutex) {
@@ -536,42 +548,42 @@ std::atomic<long> g_counter = 0;
 volatile long g_cntval = 0;
 
 enum {
-    test_suit_atomic_fetch_add,
-    test_suit_x86_lock_xadd,
-    test_suit_x86_xchg,
-    test_suit_x86_xchg_cnt_error,
-    test_suit_x86_HLE_xchg,
-    test_suit_x86_lock_cmp_xchg,
-    test_suit_x86_lock_cmp_xchg_cnt_error,
+    test_id_atomic_fetch_add,
+    test_id_x86_lock_xadd,
+    test_id_x86_xchg,
+    test_id_x86_xchg_cnt_error,
+    test_id_x86_HLE_xchg,
+    test_id_x86_lock_cmp_xchg,
+    test_id_x86_lock_cmp_xchg_cnt_error,
 };
 
-const char * getTestSuiteName(size_t test_suite)
+const char * getTestTypeName(size_t test_type)
 {
-    switch (test_suite) {
-        case test_suit_atomic_fetch_add:
-            return "test_suit_atomic_fetch_add";
-        case test_suit_x86_lock_xadd:
-            return "test_suit_x86_lock_xadd";
-        case test_suit_x86_xchg:
-            return "test_suit_x86_xchg";
-        case test_suit_x86_xchg_cnt_error:
-            return "test_suit_x86_xchg_cnt_error";
-        case test_suit_x86_HLE_xchg:
-            return "test_suit_x86_HLE_xchg";
-        case test_suit_x86_lock_cmp_xchg:
-            return "test_suit_x86_lock_cmp_xchg";
-        case test_suit_x86_lock_cmp_xchg_cnt_error:
-            return "test_suit_x86_lock_cmp_xchg_cnt_error";
+    switch (test_type) {
+        case test_id_atomic_fetch_add:
+            return "test_id_atomic_fetch_add";
+        case test_id_x86_lock_xadd:
+            return "test_id_x86_lock_xadd";
+        case test_id_x86_xchg:
+            return "test_id_x86_xchg";
+        case test_id_x86_xchg_cnt_error:
+            return "test_id_x86_xchg_cnt_error";
+        case test_id_x86_HLE_xchg:
+            return "test_id_x86_HLE_xchg";
+        case test_id_x86_lock_cmp_xchg:
+            return "test_id_x86_lock_cmp_xchg";
+        case test_id_x86_lock_cmp_xchg_cnt_error:
+            return "test_id_x86_lock_cmp_xchg_cnt_error";
         default:
-            return "unknown_test_suite_name";
+            return "unknown_test_id_name";
     }
 }
 
-template <size_t test_suite>
-void atomic_test_thread_proc(unsigned thread_idx, unsigned nthread, unsigned iterations) { }
+template <size_t test_type>
+void atomic_test_thread_proc(unsigned thread_idx, unsigned nthreads, unsigned iterations) { }
 
 template <>
-void atomic_test_thread_proc<test_suit_atomic_fetch_add>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+void atomic_test_thread_proc<test_id_atomic_fetch_add>(unsigned thread_idx, unsigned nthreads, unsigned iterations)
 {
     for (unsigned i = 0; i < iterations; ++i) {
         g_counter.fetch_add(1, std::memory_order_acq_rel);
@@ -579,7 +591,7 @@ void atomic_test_thread_proc<test_suit_atomic_fetch_add>(unsigned thread_idx, un
 }
 
 template <>
-void atomic_test_thread_proc<test_suit_x86_lock_xadd>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+void atomic_test_thread_proc<test_id_x86_lock_xadd>(unsigned thread_idx, unsigned nthreads, unsigned iterations)
 {
     for (unsigned i = 0; i < iterations; ++i) {
         ::_InterlockedExchangeAdd(&g_cntval, 1);
@@ -587,7 +599,7 @@ void atomic_test_thread_proc<test_suit_x86_lock_xadd>(unsigned thread_idx, unsig
 }
 
 template <>
-void atomic_test_thread_proc<test_suit_x86_xchg>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+void atomic_test_thread_proc<test_id_x86_xchg>(unsigned thread_idx, unsigned nthreads, unsigned iterations)
 {
     for (unsigned i = 0; i < iterations; ++i) {
         long old_value, new_value, now_value;
@@ -602,7 +614,7 @@ void atomic_test_thread_proc<test_suit_x86_xchg>(unsigned thread_idx, unsigned n
 }
 
 template <>
-void atomic_test_thread_proc<test_suit_x86_xchg_cnt_error>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+void atomic_test_thread_proc<test_id_x86_xchg_cnt_error>(unsigned thread_idx, unsigned nthreads, unsigned iterations)
 {
     unsigned s_errors = 0, s_collects = 0;
     for (unsigned i = 0; i < iterations; ++i) {
@@ -626,7 +638,7 @@ void atomic_test_thread_proc<test_suit_x86_xchg_cnt_error>(unsigned thread_idx, 
 }
 
 template <>
-void atomic_test_thread_proc<test_suit_x86_HLE_xchg>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+void atomic_test_thread_proc<test_id_x86_HLE_xchg>(unsigned thread_idx, unsigned nthreads, unsigned iterations)
 {
     for (unsigned i = 0; i < iterations; ++i) {
         long old_value, new_value, now_value;
@@ -642,7 +654,7 @@ void atomic_test_thread_proc<test_suit_x86_HLE_xchg>(unsigned thread_idx, unsign
 }
 
 template <>
-void atomic_test_thread_proc<test_suit_x86_lock_cmp_xchg>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+void atomic_test_thread_proc<test_id_x86_lock_cmp_xchg>(unsigned thread_idx, unsigned nthreads, unsigned iterations)
 {
     for (unsigned i = 0; i < iterations; ++i) {
         long old_value, new_value, now_value;
@@ -657,7 +669,7 @@ void atomic_test_thread_proc<test_suit_x86_lock_cmp_xchg>(unsigned thread_idx, u
 }
 
 template <>
-void atomic_test_thread_proc<test_suit_x86_lock_cmp_xchg_cnt_error>(unsigned thread_idx, unsigned nthread, unsigned iterations)
+void atomic_test_thread_proc<test_id_x86_lock_cmp_xchg_cnt_error>(unsigned thread_idx, unsigned nthreads, unsigned iterations)
 {
     unsigned s_errors = 0, s_collects = 0;
     for (unsigned i = 0; i < iterations; ++i) {
@@ -680,28 +692,28 @@ void atomic_test_thread_proc<test_suit_x86_lock_cmp_xchg_cnt_error>(unsigned thr
     printf("thread_idx = %u, s_collects = %u, s_errors = %u\n", thread_idx, s_collects, s_errors);
 }
 
-template <size_t test_suite>
-void run_atomic_test_threads(unsigned nthread, unsigned total_iterations)
+template <size_t test_type>
+void run_atomic_test_threads(unsigned nthreads, unsigned total_iterations)
 {
-    std::thread ** atomic_test_threads = new std::thread *[nthread];
+    std::thread ** atomic_test_threads = new std::thread *[nthreads];
 
-    unsigned iterations = total_iterations / nthread;
+    unsigned iterations = total_iterations / nthreads;
     if (atomic_test_threads) {
-        for (unsigned i = 0; i < nthread; ++i) {
-            std::thread * thread = new std::thread(atomic_test_thread_proc<test_suite>,
-                i, nthread, iterations);
+        for (unsigned i = 0; i < nthreads; ++i) {
+            std::thread * thread = new std::thread(atomic_test_thread_proc<test_type>,
+                i, nthreads, iterations);
             atomic_test_threads[i] = thread;
         }
     }
 
     if (atomic_test_threads) {
-        for (unsigned i = 0; i < nthread; ++i) {
+        for (unsigned i = 0; i < nthreads; ++i) {
             atomic_test_threads[i]->join();
         }
     }
 
     if (atomic_test_threads) {
-        for (unsigned i = 0; i < nthread; ++i) {
+        for (unsigned i = 0; i < nthreads; ++i) {
             if (atomic_test_threads[i])
                 delete atomic_test_threads[i];
         }
@@ -709,25 +721,25 @@ void run_atomic_test_threads(unsigned nthread, unsigned total_iterations)
     }
 }
 
-template <size_t test_suite>
-void run_atomic_test(unsigned nthread, unsigned total_iterations)
+template <size_t test_type>
+void run_atomic_test(unsigned nthreads, unsigned total_iterations)
 {
     g_counter = 0;
     g_cntval = 0;
 
-    printf("Test for: run_atomic_test<%s>(%u)\n", getTestSuiteName(test_suite), nthread);
+    printf("Test for: run_atomic_test<%s>(%u)\n", getTestTypeName(test_type), nthreads);
     printf("\n");
 
     using namespace std::chrono;
     time_point<high_resolution_clock> startime = high_resolution_clock::now();
 
-    run_atomic_test_threads<test_suite>(nthread, total_iterations);
+    run_atomic_test_threads<test_type>(nthreads, total_iterations);
 
     time_point<high_resolution_clock> endtime = high_resolution_clock::now();
     duration<double> elapsed_time = duration_cast< duration<double> >(endtime - startime);
 
-    printf("nthread = %d\n", nthread);
-    printf("iterations = %d\n", total_iterations / nthread);
+    printf("nthreads = %d\n", nthreads);
+    printf("iterations = %d\n", total_iterations / nthreads);
     printf("\n");
     printf("g_counter = %d\n", g_counter.load(std::memory_order_seq_cst));
     printf("g_cntval = %d\n", g_cntval);
@@ -778,14 +790,14 @@ int main(int argc, char * argv[])
 #endif
 
 #if 0
-    for (unsigned nthread = 4; nthread <= 16; nthread *= 2) {
-        run_atomic_test<test_suit_atomic_fetch_add>(nthread, MAX_ITERATIONS);
-        run_atomic_test<test_suit_x86_lock_xadd>(nthread, MAX_ITERATIONS);
-        run_atomic_test<test_suit_x86_xchg>(nthread, MAX_ITERATIONS);
-        run_atomic_test<test_suit_x86_xchg_cnt_error>(nthread, MAX_ITERATIONS);
-        run_atomic_test<test_suit_x86_HLE_xchg>(nthread, MAX_ITERATIONS);
-        run_atomic_test<test_suit_x86_lock_cmp_xchg>(nthread, MAX_ITERATIONS);
-        run_atomic_test<test_suit_x86_lock_cmp_xchg_cnt_error>(nthread, MAX_ITERATIONS);
+    for (unsigned nthreads = 4; nthreads <= 16; nthreads *= 2) {
+        run_atomic_test<test_id_atomic_fetch_add>(nthreads, MAX_ITERATIONS);
+        run_atomic_test<test_id_x86_lock_xadd>(nthreads, MAX_ITERATIONS);
+        run_atomic_test<test_id_x86_xchg>(nthreads, MAX_ITERATIONS);
+        run_atomic_test<test_id_x86_xchg_cnt_error>(nthreads, MAX_ITERATIONS);
+        run_atomic_test<test_id_x86_HLE_xchg>(nthreads, MAX_ITERATIONS);
+        run_atomic_test<test_id_x86_lock_cmp_xchg>(nthreads, MAX_ITERATIONS);
+        run_atomic_test<test_id_x86_lock_cmp_xchg_cnt_error>(nthreads, MAX_ITERATIONS);
     }
 #endif
 
