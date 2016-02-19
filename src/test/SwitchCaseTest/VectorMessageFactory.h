@@ -55,8 +55,8 @@ public:
     __forceinline Message * createMessage(unsigned int key)
     {
         //assert(key < max_capacity_);
-        assert(max_key_ < max_capacity_);
-        if (key <= max_key_) {
+        assert(max_key_ < (int)max_capacity_);
+        if ((int)key <= max_key_) {
           //FuncPtr createFunc = vec_[key];
           std::vector<FuncPtr>::const_iterator it = vec_.cbegin();
           FuncPtr createFunc = *(it + key);
@@ -87,7 +87,7 @@ public:
 
     void reserve_key(unsigned int key)
     {
-        if (key > max_key_)
+        if ((int)key > max_key_)
             max_key_ = key;
         if (key >= max_capacity_) {
             unsigned new_capacity = std::max<unsigned>(max_capacity_ * 2, 1);
@@ -95,6 +95,9 @@ public:
                 new_capacity *= 2;
             vec_.reserve(new_capacity);
             max_capacity_ = new_capacity;
+            // Adjust the max key value by max_capacity_.
+            if (max_key_ >= (int)max_capacity_)
+                max_key_ = max_capacity_ - 1;
         }
     }
 
@@ -109,7 +112,7 @@ private:
     VectorMessageFactory(VectorMessageFactory &&) = delete;
 
     std::vector<FuncPtr> vec_;
-    unsigned max_key_;
+    int      max_key_;
     unsigned max_capacity_;
 };
 

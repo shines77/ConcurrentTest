@@ -61,8 +61,8 @@ public:
     inline Message * createMessage(unsigned int key)
     {
         //assert(key < max_capacity_);
-        assert(max_key_ < max_capacity_);
-        if (key <= max_key_) {
+        assert(max_key_ < (int)max_capacity_);
+        if ((int)key <= max_key_) {
             assert(array_ != nullptr);
             //FuncPtr createFunc = array_[key];
             FuncPtr createFunc = *(array_ + key);
@@ -123,8 +123,8 @@ public:
 
     void reserve_key(unsigned int key)
     {
-        if (key > max_key_) {
-            max_key_ = key;
+        if ((int)key > max_key_) {
+            max_key_ = (int)key;
             if (key >= max_capacity_) {
                 unsigned new_capacity = std::max<unsigned>(max_capacity_ * 2, 1);
                 if (key >= new_capacity)
@@ -134,24 +134,44 @@ public:
         }
     }
 
-    void resize(unsigned capacity, bool clear = true) {
-        if (capacity > max_capacity_) {
+    void resize(unsigned capacity, bool force_shrink = true, bool force_clear = false) {
+        if (force_shrink || (capacity > max_capacity_)) {
             FuncPtr * new_array;
             // If you need clear the data, needn't to use realloc(),
             // because realloc() maybe copy the old data to new data area.
-            if (clear || (array_ == nullptr))
-                new_array = (FuncPtr *)std::malloc(sizeof(FuncPtr) * capacity);
-            else
+            if (!force_clear) {
                 new_array = (FuncPtr *)std::realloc(array_, sizeof(FuncPtr) * capacity);
-            if (new_array) {
-                if (clear)
-                    ::memset(new_array, 0, sizeof(FuncPtr) * capacity);
-                array_ = new_array;
-                max_capacity_ = capacity;
+                if (new_array) {
+                    array_ = new_array;
+                    max_capacity_ = capacity;
+                }
+                else {
+                    array_ = nullptr;
+                    max_capacity_ = 0;
+                }
+                // Adjust the max key value by max_capacity_.
+                if (max_key_ >= (int)max_capacity_)
+                    max_key_ = max_capacity_ - 1;
             }
             else {
-                array_ = nullptr;
-                max_capacity_ = 0;
+                if (array_) {
+                    std::free(array_);
+                    array_ = nullptr;
+                    max_capacity_ = 0;
+                }
+                new_array = (FuncPtr *)std::malloc(sizeof(FuncPtr) * capacity);
+                if (new_array) {
+                    ::memset(new_array, 0, sizeof(FuncPtr) * capacity);
+                    array_ = new_array;
+                    max_capacity_ = capacity;
+                }
+                else {
+                    array_ = nullptr;
+                    max_capacity_ = 0;
+                }
+                // Adjust the max key value by max_capacity_.
+                if (max_key_ >= (int)max_capacity_)
+                    max_key_ = max_capacity_ - 1;
             }
         }
     }
@@ -161,6 +181,7 @@ protected:
         if (array_) {
             std::free(array_);
             array_ = nullptr;
+            max_capacity_ = 0;
         }
         FuncPtr * new_array = (FuncPtr *)std::malloc(sizeof(FuncPtr) * capacity);
         if (new_array) {
@@ -169,18 +190,32 @@ protected:
             array_ = new_array;
             max_capacity_ = capacity;
         }
+        // Adjust the max key value by max_capacity_.
+        if (max_key_ >= (int)max_capacity_)
+            max_key_ = max_capacity_ - 1;
     }
 
 private:
-    ArrayMessageFactory() : max_key_(0), max_capacity_(0), array_(nullptr) {
+    ArrayMessageFactory() : max_key_(-1), max_capacity_(0), array_(nullptr) {
         this->force_resize(128, true);
     };
     ArrayMessageFactory(const ArrayMessageFactory &) = delete;
     ArrayMessageFactory(ArrayMessageFactory &&) = delete;
 
-    FuncPtr * array_;
-    unsigned max_key_;
-    unsigned max_capacity_;
+    virtual ~ArrayMessageFactory() {
+        if (array_) {
+            std::free(array_);
+#if !defined(NDEBUG)
+            array_ = nullptr;
+            max_key_ = 0;
+            max_capacity_ = 0;
+#endif
+        }
+    };
+
+    FuncPtr *   array_;
+    int         max_key_;
+    unsigned    max_capacity_;
 };
 
 #define ARRAY_REGISTER_MESSAGE_VNAME(T)        array_reg_msg_##T##_
