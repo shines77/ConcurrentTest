@@ -31,9 +31,9 @@
 #include "ArrayMessageFactory.h"
 
 #if defined(NDEBUG)
-#define MAX_ITERATIONS      (8 * 1000 * 10000)
+#define MAX_ITERATIONS      (4 * 1000 * 10000)
 #else
-#define MAX_ITERATIONS      (20 * 10000)
+#define MAX_ITERATIONS      (4 * 10000)
 #endif
 
 #define DEFAULT_SEED_VALUE  (20160218)
@@ -285,6 +285,60 @@ Message * create_a_message<test_id_ceph_switch_case>(unsigned int msg_id) {
         break;
     case CEPH_MSG_ID_21:
         m = new CephMessage21();
+        break;
+    case CEPH_MSG_ID_22:
+        m = new CephMessage22();
+        break;
+    case CEPH_MSG_ID_23:
+        m = new CephMessage23();
+        break;
+    case CEPH_MSG_ID_24:
+        m = new CephMessage24();
+        break;
+    case CEPH_MSG_ID_25:
+        m = new CephMessage25();
+        break;
+    case CEPH_MSG_ID_26:
+        m = new CephMessage26();
+        break;
+    case CEPH_MSG_ID_27:
+        m = new CephMessage27();
+        break;
+    case CEPH_MSG_ID_28:
+        m = new CephMessage28();
+        break;
+    case CEPH_MSG_ID_29:
+        m = new CephMessage29();
+        break;
+    case CEPH_MSG_ID_30:
+        m = new CephMessage30();
+        break;
+    case CEPH_MSG_ID_31:
+        m = new CephMessage31();
+        break;
+    case CEPH_MSG_ID_32:
+        m = new CephMessage32();
+        break;
+    case CEPH_MSG_ID_33:
+        m = new CephMessage33();
+        break;
+    case CEPH_MSG_ID_34:
+        m = new CephMessage34();
+        break;
+    case CEPH_MSG_ID_35:
+        m = new CephMessage35();
+        break;
+    case CEPH_MSG_ID_36:
+        m = new CephMessage36();
+        break;
+    case CEPH_MSG_ID_37:
+        m = new CephMessage37();
+        break;
+    case CEPH_MSG_ID_38:
+        m = new CephMessage38();
+        break;
+    case CEPH_MSG_ID_39:
+        m = new CephMessage39();
         break;
     default:
         break;

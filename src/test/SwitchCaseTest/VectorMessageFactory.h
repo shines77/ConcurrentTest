@@ -1,5 +1,5 @@
 //
-// Created by skyinno on 2/14/16.
+// Created by skyinno on 2/14/2016.
 //
 
 #ifndef CEPH_VECTOR_MESSAGEFACTORY_H
@@ -8,7 +8,6 @@
 #include <vector>
 #include <functional>
 #include <memory>
-#include <iostream>     // For std::cout
 #include <algorithm>    // For std::max
 
 #include "Message.h"
@@ -24,9 +23,7 @@ public:
         register_t(unsigned int key)
         {
             VectorMessageFactory & factory = VectorMessageFactory::get();
-            factory.reserve(key);
-            //std::vector<FuncPtr>::iterator it = factory.vec_.begin();
-            //factory.vec_.emplace(&it[key], &register_t<T>::create);
+            factory.reserve_key(key);
             factory.vec_[key] = &register_t<T>::create;
         }
 
@@ -34,8 +31,7 @@ public:
         register_t(unsigned int key, Args... args)
         {
             VectorMessageFactory & factory = VectorMessageFactory::get();
-            factory.reserve(key);
-            //factory.vec_.emplace(key, [&] { return new T(std::forward<Args>(args...)); });
+            factory.reserve_key(key);
             factory.vec_[key] = &register_t<T>::create<Args...>;
         }
 
@@ -49,7 +45,7 @@ public:
         template <typename... Args>
         static inline Message * create(Args... args)
         {
-            return new T(std::forward<Args...>(args...));
+            return new T(std::forward<Args>(args)...);
         }
 
         //template <typename... Args>
@@ -60,10 +56,6 @@ public:
     {
         //assert(key < max_capacity_);
         assert(max_key_ < max_capacity_);
-        //if (key > max_key_)
-        //    return nullptr;
-        //std::vector<FuncPtr>::const_iterator it = vec_[key];
-        //if (key < max_capacity_) {
         if (key <= max_key_) {
           //FuncPtr createFunc = vec_[key];
           std::vector<FuncPtr>::const_iterator it = vec_.cbegin();
@@ -93,7 +85,7 @@ public:
         return instance;
     }
 
-    void reserve(unsigned int key)
+    void reserve_key(unsigned int key)
     {
         if (key > max_key_)
             max_key_ = key;
@@ -139,9 +131,9 @@ VECTOR_REGISTER_MESSAGE(CephMessage06, CEPH_MSG_ID_6);
 VECTOR_REGISTER_MESSAGE(CephMessage07, CEPH_MSG_ID_7);
 VECTOR_REGISTER_MESSAGE(CephMessage08, CEPH_MSG_ID_8);
 VECTOR_REGISTER_MESSAGE(CephMessage09, CEPH_MSG_ID_9);
+
 VECTOR_REGISTER_MESSAGE(CephMessage10, CEPH_MSG_ID_10);
 //VECTOR_REGISTER_MESSAGE_01(CephMessage10, CEPH_MSG_ID_10, int, 1);
-
 VECTOR_REGISTER_MESSAGE(CephMessage11, CEPH_MSG_ID_11);
 VECTOR_REGISTER_MESSAGE(CephMessage12, CEPH_MSG_ID_12);
 VECTOR_REGISTER_MESSAGE(CephMessage13, CEPH_MSG_ID_13);
@@ -151,7 +143,27 @@ VECTOR_REGISTER_MESSAGE(CephMessage16, CEPH_MSG_ID_16);
 VECTOR_REGISTER_MESSAGE(CephMessage17, CEPH_MSG_ID_17);
 VECTOR_REGISTER_MESSAGE(CephMessage18, CEPH_MSG_ID_18);
 VECTOR_REGISTER_MESSAGE(CephMessage19, CEPH_MSG_ID_19);
+
 VECTOR_REGISTER_MESSAGE(CephMessage20, CEPH_MSG_ID_20);
 VECTOR_REGISTER_MESSAGE(CephMessage21, CEPH_MSG_ID_21);
+VECTOR_REGISTER_MESSAGE(CephMessage22, CEPH_MSG_ID_22);
+VECTOR_REGISTER_MESSAGE(CephMessage23, CEPH_MSG_ID_23);
+VECTOR_REGISTER_MESSAGE(CephMessage24, CEPH_MSG_ID_24);
+VECTOR_REGISTER_MESSAGE(CephMessage25, CEPH_MSG_ID_25);
+VECTOR_REGISTER_MESSAGE(CephMessage26, CEPH_MSG_ID_26);
+VECTOR_REGISTER_MESSAGE(CephMessage27, CEPH_MSG_ID_27);
+VECTOR_REGISTER_MESSAGE(CephMessage28, CEPH_MSG_ID_28);
+VECTOR_REGISTER_MESSAGE(CephMessage29, CEPH_MSG_ID_29);
+
+VECTOR_REGISTER_MESSAGE(CephMessage30, CEPH_MSG_ID_30);
+VECTOR_REGISTER_MESSAGE(CephMessage31, CEPH_MSG_ID_31);
+VECTOR_REGISTER_MESSAGE(CephMessage32, CEPH_MSG_ID_32);
+VECTOR_REGISTER_MESSAGE(CephMessage33, CEPH_MSG_ID_33);
+VECTOR_REGISTER_MESSAGE(CephMessage34, CEPH_MSG_ID_34);
+VECTOR_REGISTER_MESSAGE(CephMessage35, CEPH_MSG_ID_35);
+VECTOR_REGISTER_MESSAGE(CephMessage36, CEPH_MSG_ID_36);
+VECTOR_REGISTER_MESSAGE(CephMessage37, CEPH_MSG_ID_37);
+VECTOR_REGISTER_MESSAGE(CephMessage38, CEPH_MSG_ID_38);
+VECTOR_REGISTER_MESSAGE(CephMessage39, CEPH_MSG_ID_39);
 
 #endif // CEPH_VECTOR_MESSAGEFACTORY_H

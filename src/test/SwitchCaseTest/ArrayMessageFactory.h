@@ -1,5 +1,5 @@
 //
-// Created by skyinno on 2/14/16.
+// Created by skyinno on 2/14/2016.
 //
 
 #ifndef CEPH_ARRAY_MESSAGEFACTORY_H
@@ -12,7 +12,6 @@
 #include <vector>
 #include <functional>
 #include <memory>
-#include <iostream>     // For std::cout
 #include <algorithm>    // For std::max
 
 #include "Message.h"
@@ -28,7 +27,7 @@ public:
         register_t(unsigned int key)
         {
             ArrayMessageFactory & factory = ArrayMessageFactory::get();
-            factory.reserve(key);
+            factory.reserve_key(key);
             if (factory.array_)
                 factory.array_[key] = &register_t<T>::create;
         }
@@ -37,7 +36,7 @@ public:
         register_t(unsigned int key, Args... args)
         {
             ArrayMessageFactory & factory = ArrayMessageFactory::get();
-            factory.reserve(key);
+            factory.reserve_key(key);
             if (factory.array_)
                 factory.array_[key] = &register_t<T>::create<Args...>;
         }
@@ -92,11 +91,22 @@ public:
         return instance;
     }
 
-    void _reserve(unsigned capacity) {
+    void reserve(unsigned capacity) {
+#if 1
+        // Use realloc() to implement reserve the old data.
+        if (capacity > max_capacity_) {
+            FuncPtr * new_array = (FuncPtr *)std::realloc(array_, sizeof(FuncPtr) * capacity);
+            if (new_array) {
+                array_ = new_array;
+                max_capacity_ = capacity;
+            }
+        }
+#else
         if (capacity > max_capacity_) {
             FuncPtr * new_array = (FuncPtr *)std::malloc(sizeof(FuncPtr) * capacity);
             if (new_array) {
                 if (array_) {
+                    // If array_ and new_array is different, reserve the old data.
                     if (new_array != array_) {
                         for (unsigned i = 0; i < max_capacity_; ++i) {
                             new_array[i] = array_[i];
@@ -108,9 +118,10 @@ public:
                 max_capacity_ = capacity;
             }
         }
+#endif
     }
 
-    void reserve(unsigned int key)
+    void reserve_key(unsigned int key)
     {
         if (key > max_key_) {
             max_key_ = key;
@@ -118,7 +129,7 @@ public:
                 unsigned new_capacity = std::max<unsigned>(max_capacity_ * 2, 1);
                 if (key >= new_capacity)
                     new_capacity *= 2;
-                this->_reserve(new_capacity);
+                this->reserve(new_capacity);
             }
         }
     }
@@ -126,10 +137,12 @@ public:
     void resize(unsigned capacity, bool clear = true) {
         if (capacity > max_capacity_) {
             FuncPtr * new_array;
-            if (array_)
-                new_array = (FuncPtr *)std::realloc(array_, sizeof(FuncPtr) * capacity);
-            else
+            // If you need clear the data, needn't to use realloc(),
+            // because realloc() maybe copy the old data to new data area.
+            if (clear || (array_ == nullptr))
                 new_array = (FuncPtr *)std::malloc(sizeof(FuncPtr) * capacity);
+            else
+                new_array = (FuncPtr *)std::realloc(array_, sizeof(FuncPtr) * capacity);
             if (new_array) {
                 if (clear)
                     ::memset(new_array, 0, sizeof(FuncPtr) * capacity);
@@ -161,11 +174,6 @@ protected:
 private:
     ArrayMessageFactory() : max_key_(0), max_capacity_(0), array_(nullptr) {
         this->force_resize(128, true);
-#if 0
-        for (unsigned i = 0; i < max_capacity_; ++i) {
-            array_[i] = nullptr;
-        }
-#endif
     };
     ArrayMessageFactory(const ArrayMessageFactory &) = delete;
     ArrayMessageFactory(ArrayMessageFactory &&) = delete;
@@ -179,7 +187,7 @@ private:
 #define ARRAY_REGISTER_MESSAGE(T, key, ...)    static ArrayMessageFactory::register_t<T> ARRAY_REGISTER_MESSAGE_VNAME(T)(key, ##__VA_ARGS__);
 
 #define ARRAY_REGISTER_MESSAGE_01(T, key, arg_type, ...)   \
-                                                static ArrayMessageFactory::register_t<T, arg_type> ARRAY_REGISTER_MESSAGE_VNAME(T)(key, ##__VA_ARGS__);
+                                               static ArrayMessageFactory::register_t<T, arg_type> ARRAY_REGISTER_MESSAGE_VNAME(T)(key, ##__VA_ARGS__);
 
 #include "Messages.h"
 
@@ -193,9 +201,9 @@ ARRAY_REGISTER_MESSAGE(CephMessage06, CEPH_MSG_ID_6);
 ARRAY_REGISTER_MESSAGE(CephMessage07, CEPH_MSG_ID_7);
 ARRAY_REGISTER_MESSAGE(CephMessage08, CEPH_MSG_ID_8);
 ARRAY_REGISTER_MESSAGE(CephMessage09, CEPH_MSG_ID_9);
+
 ARRAY_REGISTER_MESSAGE(CephMessage10, CEPH_MSG_ID_10);
 //ARRAY_REGISTER_MESSAGE_01(CephMessage10, CEPH_MSG_ID_10, int, 1);
-
 ARRAY_REGISTER_MESSAGE(CephMessage11, CEPH_MSG_ID_11);
 ARRAY_REGISTER_MESSAGE(CephMessage12, CEPH_MSG_ID_12);
 ARRAY_REGISTER_MESSAGE(CephMessage13, CEPH_MSG_ID_13);
@@ -205,7 +213,27 @@ ARRAY_REGISTER_MESSAGE(CephMessage16, CEPH_MSG_ID_16);
 ARRAY_REGISTER_MESSAGE(CephMessage17, CEPH_MSG_ID_17);
 ARRAY_REGISTER_MESSAGE(CephMessage18, CEPH_MSG_ID_18);
 ARRAY_REGISTER_MESSAGE(CephMessage19, CEPH_MSG_ID_19);
+
 ARRAY_REGISTER_MESSAGE(CephMessage20, CEPH_MSG_ID_20);
 ARRAY_REGISTER_MESSAGE(CephMessage21, CEPH_MSG_ID_21);
+ARRAY_REGISTER_MESSAGE(CephMessage22, CEPH_MSG_ID_22);
+ARRAY_REGISTER_MESSAGE(CephMessage23, CEPH_MSG_ID_23);
+ARRAY_REGISTER_MESSAGE(CephMessage24, CEPH_MSG_ID_24);
+ARRAY_REGISTER_MESSAGE(CephMessage25, CEPH_MSG_ID_25);
+ARRAY_REGISTER_MESSAGE(CephMessage26, CEPH_MSG_ID_26);
+ARRAY_REGISTER_MESSAGE(CephMessage27, CEPH_MSG_ID_27);
+ARRAY_REGISTER_MESSAGE(CephMessage28, CEPH_MSG_ID_28);
+ARRAY_REGISTER_MESSAGE(CephMessage29, CEPH_MSG_ID_29);
+
+ARRAY_REGISTER_MESSAGE(CephMessage30, CEPH_MSG_ID_30);
+ARRAY_REGISTER_MESSAGE(CephMessage31, CEPH_MSG_ID_31);
+ARRAY_REGISTER_MESSAGE(CephMessage32, CEPH_MSG_ID_32);
+ARRAY_REGISTER_MESSAGE(CephMessage33, CEPH_MSG_ID_33);
+ARRAY_REGISTER_MESSAGE(CephMessage34, CEPH_MSG_ID_34);
+ARRAY_REGISTER_MESSAGE(CephMessage35, CEPH_MSG_ID_35);
+ARRAY_REGISTER_MESSAGE(CephMessage36, CEPH_MSG_ID_36);
+ARRAY_REGISTER_MESSAGE(CephMessage37, CEPH_MSG_ID_37);
+ARRAY_REGISTER_MESSAGE(CephMessage38, CEPH_MSG_ID_38);
+ARRAY_REGISTER_MESSAGE(CephMessage39, CEPH_MSG_ID_39);
 
 #endif // CEPH_ARRAY_MESSAGEFACTORY_H
