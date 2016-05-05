@@ -28,13 +28,13 @@
 using namespace FastQueue;
 
 #if defined(NDEBUG)
-#define MAX_MESSAGE_COUNT   (800 * 10000)
+#define MAX_MESSAGE_COUNT   (800 * 10000 / 1000)
 #else
 #define MAX_MESSAGE_COUNT   (50 * 10000)
 #endif
 
 #if defined(NDEBUG)
-#define MAX_ITERATIONS      (200 * 100000)
+#define MAX_ITERATIONS      (200 * 100000 / 1000)
 #else
 #define MAX_ITERATIONS      (10 * 100000)
 #endif
