@@ -555,7 +555,6 @@ int main(int argc, char * argv[])
     run_switch_case_test<test_id_array_message_factory>(nthreads, iterations);
     run_switch_case_test<test_id_map_message_factory>(nthreads, iterations);
     run_switch_case_test<test_id_unordered_map_message_factory>(nthreads, iterations);
-    
 
 #if 0
     printf("-------------------------------------------------------------------------\n");
@@ -573,6 +572,9 @@ int main(int argc, char * argv[])
 #endif
 
     printf("\n");
+#if defined(_WIN32) || defined(WIN32) || defined(OS_WINDOWS) \
+ || defined(__WINDOWS__) || defined(_WINDOWS) || defined(_WINDOWS_)
     ::system("pause");
+#endif
     return 0;
 }

@@ -15,7 +15,6 @@
 #define UTILS_POWOF2_MODE   1
 
 namespace FastQueue {
-
 namespace detail {
 
 enum boolean_value_t {
@@ -415,7 +414,6 @@ struct round_to_pow2<4294967295UL> {
 #endif // _WIN64 || _M_X64 || _M_AMD64
 
 } // namespace compile_time
-
 } // namespace FastQueue
 
 #endif  /* FASTQUEUE_UTILS_POWOF2_H */

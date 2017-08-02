@@ -12,7 +12,6 @@
 #define TI_MAX(x, y)  ((x) >= (y) ? (x) : (y))
 
 namespace FastQueue {
-
 namespace math {
 
 template <typename _Ty>
@@ -46,7 +45,6 @@ struct maxinum {
 };
 
 } // namespace math
-
 } // namespace FastQueue
 
 #endif  /* FASTQUEUE_UTILS_MINMAX_H */

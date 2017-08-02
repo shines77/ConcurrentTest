@@ -39,7 +39,6 @@ public:                                                                     \
 // DEFINE_METHOD_CHECKER(std::string, toString, (void) const);
 
 namespace FastQueue {
-
 namespace StringUtils {
 
 //
@@ -68,7 +67,7 @@ struct HasToStringFunction {
 template <bool>
 struct ToStringWrapper {};
 
-template<>
+template <>
 struct ToStringWrapper<true> {
     template<typename T>
     static std::string toString(const T & x) {
@@ -76,7 +75,7 @@ struct ToStringWrapper<true> {
     }
 };
 
-template<>
+template <>
 struct ToStringWrapper<false> {
     template<typename T>
     static std::string toString(const T & x) {
@@ -84,20 +83,19 @@ struct ToStringWrapper<false> {
     }
 };
 
-} // namespace detail */
+} // namespace detail
 
-template<typename T>
+template <typename T>
 std::string toString(const T & x) {
     return detail::ToStringWrapper<detail::ChecktoStringFunctionIsExists<T>::value>::toString(x);
 }
 
-template<typename T>
+template <typename T>
 std::string toString2(const T & x) {
     return detail::ToStringWrapper<detail::HasToStringFunction<T>::value>::toString(x);
 }
 
 } // namespace StringUtils
-
 } // namespace FastQueue
 
 #endif  /* FASTQUEUE_UTILS_TOSTRING_H */

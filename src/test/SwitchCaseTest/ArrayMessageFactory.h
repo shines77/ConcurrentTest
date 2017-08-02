@@ -21,7 +21,7 @@
 class ArrayMessageFactory
 {
 public:
-    template<typename T>
+    template <typename T>
     struct register_t
     {
         register_t(unsigned int key)

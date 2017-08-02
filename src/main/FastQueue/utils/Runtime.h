@@ -20,7 +20,6 @@
 #endif
 
 namespace FastQueue {
-
 namespace Runtime {
 
 /* 
@@ -76,7 +75,6 @@ int getPhysicalProcessors() {
 }
 
 } // namespace Runtime
-
 } // namespace FastQueue
 
 #endif  /* FASTQUEUE_UTILS_RUNTIME_H */

@@ -15,7 +15,6 @@
 #include "FastQueue/basic/threadlocal.h"
 
 namespace FastQueue {
-
 namespace StringUtils {
 
 static TI_THREAD_LOCAL std::string * tlsFormatStr = nullptr;
@@ -60,7 +59,6 @@ format(char * buffer, std::size_t size_in_bytes,
 }
 
 } // namespace StringUtils
-
 } // namespace FastQueue
 
 #endif  /* FASTQUEUE_UTILS_STRINGUTILS_H */
